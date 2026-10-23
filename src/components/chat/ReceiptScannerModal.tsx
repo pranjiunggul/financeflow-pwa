@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../../db/database';
 import {
   X,
   Camera,
@@ -46,6 +48,9 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   initialFile,
   onProposalGenerated,
 }) => {
+  const liveSettings = useLiveQuery(() => db.settings.get('current'));
+  const effectiveSettings = settings || liveSettings;
+
   const [isScanning, setIsScanning] = useState(false);
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
@@ -54,6 +59,8 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
   const [activeEngine, setActiveEngine] = useState<'ai' | 'tesseract'>('ai');
   const [isAiAvailable, setIsAiAvailable] = useState(false);
+  const [currentBlobFile, setCurrentBlobFile] = useState<Blob | null>(null);
+  const [quickKeyInput, setQuickKeyInput] = useState('');
 
   // Editable Form States for Interactive Review
   const [editType, setEditType] = useState<TransactionType>('expense');
@@ -67,12 +74,14 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
 
   // Check if AI vision is available
   useEffect(() => {
-    const hasAi = !!settings?.aiEnabled && (!!settings.aiApiKey || settings.aiProvider === 'gemini');
+    const hasAi = !!effectiveSettings?.aiEnabled && (!!effectiveSettings.aiApiKey || effectiveSettings.aiProvider === 'gemini');
     setIsAiAvailable(hasAi);
-    if (!hasAi) {
+    if (hasAi) {
+      setActiveEngine('ai');
+    } else {
       setActiveEngine('tesseract');
     }
-  }, [settings]);
+  }, [effectiveSettings]);
 
   // Handle Initial File passed (e.g. from Clipboard Paste or Drag & Drop)
   useEffect(() => {
@@ -83,7 +92,8 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
 
   if (!isOpen) return null;
 
-  const processFile = async (file: Blob) => {
+  const processFile = async (file: Blob, engineOverride?: 'ai' | 'tesseract') => {
+    setCurrentBlobFile(file);
     setErrorMessage('');
     setScanResult(null);
     setIsScanning(true);
@@ -93,11 +103,13 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
     const localUrl = URL.createObjectURL(file);
     setPreviewUrl(localUrl);
 
+    const chosenEngine = engineOverride || activeEngine;
+
     try {
       let result: OCRScanResult | null = null;
 
       // Try AI Vision first if enabled and configured
-      if (activeEngine === 'ai' || isAiAvailable) {
+      if (chosenEngine === 'ai' || isAiAvailable) {
         try {
           setProgress(30);
           setStatusText('Menganalisis bukti transaksi dengan AI Vision multimodal...');
@@ -105,7 +117,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
             accounts,
             categories,
             baseCurrency,
-            settings,
+            settings: effectiveSettings || undefined,
             masterPin,
           });
         } catch (aiErr: any) {
@@ -258,7 +270,12 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
           <div className="flex items-center space-x-1.5">
             <button
               type="button"
-              onClick={() => setActiveEngine('ai')}
+              onClick={() => {
+                setActiveEngine('ai');
+                if (currentBlobFile && isAiAvailable) {
+                  processFile(currentBlobFile, 'ai');
+                }
+              }}
               className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg font-medium transition ${
                 activeEngine === 'ai'
                   ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/40'
@@ -270,7 +287,12 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
             </button>
             <button
               type="button"
-              onClick={() => setActiveEngine('tesseract')}
+              onClick={() => {
+                setActiveEngine('tesseract');
+                if (currentBlobFile) {
+                  processFile(currentBlobFile, 'tesseract');
+                }
+              }}
               className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg font-medium transition ${
                 activeEngine === 'tesseract'
                   ? 'bg-slate-800 text-slate-200 border border-slate-700'
@@ -285,6 +307,52 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
 
         {/* Body Content */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
+          {/* Quick AI Activation Banner */}
+          {!isAiAvailable && (
+            <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+                  <span className="font-bold text-xs text-white">Aktifkan Multimodal AI Vision (Hasil 99% Akurat)</span>
+                </div>
+                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-semibold">
+                  Gratis
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Mode Offline OCR (Tesseract) kesulitan membaca screenshot m-banking. Tempelkan API Key Gemini Anda di bawah ini agar pemindaian otomatis menggunakan AI Vision:
+              </p>
+              <div className="flex items-center space-x-2 pt-0.5">
+                <input
+                  type="text"
+                  value={quickKeyInput}
+                  onChange={(e) => setQuickKeyInput(e.target.value)}
+                  placeholder="Tempel API Key Gemini (AQ.Ab8...)"
+                  className="flex-1 px-3 py-1.5 bg-slate-900 border border-indigo-500/40 rounded-xl text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const clean = quickKeyInput.trim();
+                    if (!clean) return;
+                    await db.settings.update('current', {
+                      aiApiKey: clean,
+                      aiProvider: 'gemini',
+                      aiEnabled: true,
+                    });
+                    setIsAiAvailable(true);
+                    setActiveEngine('ai');
+                    if (currentBlobFile) {
+                      processFile(currentBlobFile, 'ai');
+                    }
+                  }}
+                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/30 shrink-0"
+                >
+                  Aktifkan AI
+                </button>
+              </div>
+            </div>
+          )}
           {/* File Upload Zone */}
           {!previewUrl && (
             <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-3xl p-8 flex flex-col items-center justify-center space-y-3 cursor-pointer transition bg-slate-950/40">

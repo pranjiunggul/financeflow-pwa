@@ -505,7 +505,8 @@ export async function scanReceiptWithAI(
   },
   fetchFn: typeof fetch = fetch
 ): Promise<OCRScanResult | null> {
-  const { settings, masterPin, baseCurrency } = context;
+  const { masterPin, baseCurrency } = context;
+  const currentSettings = context.settings || (await db.settings.get('current'));
 
   // 1. Find Vision-capable Provider and API Key
   let providerType: 'gemini' | 'openai' | null = null;
@@ -553,16 +554,16 @@ export async function scanReceiptWithAI(
     }
   }
 
-  // Fallback to settings.aiApiKey (Legacy single key or direct settings)
-  if (!plainKey && settings?.aiApiKey && settings.aiEnabled) {
-    if (settings.aiProvider === 'gemini') {
+  // Fallback to currentSettings.aiApiKey (Legacy single key or direct settings)
+  if (!plainKey && currentSettings?.aiApiKey && currentSettings.aiEnabled) {
+    if (currentSettings.aiProvider === 'gemini') {
       providerType = 'gemini';
-      plainKey = settings.aiApiKey;
+      plainKey = currentSettings.aiApiKey;
       modelName = 'gemini-3.8-flash';
       apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${plainKey}`;
-    } else if (settings.aiProvider === 'openai') {
+    } else if (currentSettings.aiProvider === 'openai') {
       providerType = 'openai';
-      plainKey = settings.aiApiKey;
+      plainKey = currentSettings.aiApiKey;
       modelName = 'gpt-4o-mini';
       apiUrl = 'https://api.openai.com/v1/chat/completions';
       authHeaders = {
@@ -629,18 +630,40 @@ RULES:
       },
     };
 
-    const resp = await fetchFn(apiUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
+    const candidateModels = [modelName, 'gemini-3.5-flash-lite', 'gemini-flash-latest'].filter(
+      (m, idx, arr) => arr.indexOf(m) === idx
+    );
 
-    if (!resp.ok) {
-      throw new Error(`Gemini Vision API error: HTTP ${resp.status} ${resp.statusText}`);
+    let lastErr: any = null;
+    let success = false;
+
+    for (const m of candidateModels) {
+      const currentUrl = apiUrl.replace(/\/models\/[^:]+:/, `/models/${m}:`);
+      try {
+        const resp = await fetchFn(currentUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+        });
+
+        if (resp.ok) {
+          const data = await resp.json();
+          responseJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          if (responseJsonText) {
+            success = true;
+            break;
+          }
+        } else {
+          lastErr = new Error(`Gemini Vision API (${m}) HTTP ${resp.status} ${resp.statusText}`);
+        }
+      } catch (err) {
+        lastErr = err;
+      }
     }
 
-    const data = await resp.json();
-    responseJsonText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    if (!success) {
+      throw lastErr || new Error('All Gemini Vision models failed');
+    }
   } else if (providerType === 'openai') {
     const requestBody = {
       model: modelName,

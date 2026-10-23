@@ -15,6 +15,7 @@ import {
   AlertTriangle,
   FolderArchive,
   Globe,
+  Sparkles,
 } from 'lucide-react';
 import type { AppSettings, CurrencyCode, LocalBackupMetadata, SyncConflictRecord } from '../../types';
 import { db } from '../../db/database';
@@ -81,6 +82,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   };
 
   const [aiEnabled, setAiEnabled] = useState(settings?.aiEnabled || false);
+  const [quickGeminiKey, setQuickGeminiKey] = useState(settings?.aiApiKey || '');
+  const [keySavedAlert, setKeySavedAlert] = useState(false);
 
   // Google Drive & Backup states
   const [driveClientId, setDriveClientId] = useState(
@@ -650,6 +653,48 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             className="w-5 h-5 accent-indigo-600 rounded cursor-pointer shrink-0 ml-4"
           />
         </div>
+
+        {aiEnabled && (
+          <div className="p-5 rounded-3xl bg-slate-900 border border-indigo-500/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+                <h4 className="text-sm font-bold text-white">Google Gemini API Key (AI Vision & Copilot)</h4>
+              </div>
+              <span className="text-[11px] text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded-full font-semibold">
+                Gratis
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">
+              Kunci ini mengaktifkan AI Vision untuk membaca bukti transfer bank & struk belanja dengan akurasi 99%.
+            </p>
+            <div className="flex items-center space-x-2">
+              <input
+                type="text"
+                value={quickGeminiKey}
+                onChange={(e) => setQuickGeminiKey(e.target.value)}
+                placeholder="Masukkan API Key Gemini (AQ.Ab8...)"
+                className="flex-1 px-3.5 py-2 bg-slate-950 border border-slate-700 rounded-xl text-white text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  const clean = quickGeminiKey.trim();
+                  await db.settings.update('current', {
+                    aiApiKey: clean,
+                    aiProvider: 'gemini',
+                    aiEnabled: true,
+                  });
+                  setKeySavedAlert(true);
+                  setTimeout(() => setKeySavedAlert(false), 3000);
+                }}
+                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/30 shrink-0"
+              >
+                {keySavedAlert ? '✓ Tersimpan!' : 'Simpan Kunci'}
+              </button>
+            </div>
+          </div>
+        )}
 
         {aiEnabled && (
           <AIProviderManager
