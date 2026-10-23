@@ -1,0 +1,39 @@
+{
+  "name": "personal-finance-pwa",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "tsx tests/ledger-engine.test.ts && tsx tests/phase2-engine.test.ts && tsx tests/fx-engine.test.ts && tsx tests/phase3-analytics.test.ts && tsx tests/phase4-sync-backup.test.ts && tsx tests/phase5-unified-assistant.test.ts && tsx tests/phase6-telegram-inbox.test.ts && tsx tests/phase7-offline-intelligence.test.ts && tsx tests/phase8-ai-providers-failover.test.ts"
+  },
+  "dependencies": {
+    "chart.js": "^4.6.1",
+    "clsx": "^2.1.1",
+    "date-fns": "^4.1.0",
+    "dexie": "^4.0.11",
+    "dexie-react-hooks": "^1.1.7",
+    "lucide-react": "^1.16.0",
+    "react": "^19.0.0",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19.0.0",
+    "tailwind-merge": "^3.0.2",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.4",
+    "@types/react": "^19.0.8",
+    "@types/react-dom": "^19.0.3",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "fake-indexeddb": "^6.2.6",
+    "postcss": "^8.5.2",
+    "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
+    "typescript": "^5.7.3",
+    "vite": "^6.1.0",
+    "vite-plugin-pwa": "^0.21.1"
+  }
+}
