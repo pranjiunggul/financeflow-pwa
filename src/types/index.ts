@@ -315,16 +315,26 @@ export interface ChatMessage {
 
 export interface OCRScanResult {
   merchantName?: string;
+  recipientName?: string;
+  sourceAccountName?: string;
+  destinationAccountName?: string;
+  transactionType?: 'expense' | 'income' | 'transfer';
   date?: string;
   totalAmount?: number;
+  nominalAmount?: number;
+  feeAmount?: number;
   taxAmount?: number;
   subtotalAmount?: number;
   currency?: string;
+  notes?: string;
+  referenceNumber?: string;
+  categorySuggestion?: string;
   lineItems?: Array<{ description: string; amount: number }>;
   rawText: string;
   confidence: number;
   imageHash: string;
   isDuplicate?: boolean;
+  engineUsed?: 'ai_vision' | 'tesseract_ocr';
 }
 
 export interface ProactiveAlertItem {

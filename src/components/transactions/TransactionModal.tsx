@@ -13,6 +13,7 @@ import {
   FileText,
   AlertCircle,
   RefreshCw,
+  Camera,
 } from 'lucide-react';
 import type {
   Transaction,
@@ -20,6 +21,7 @@ import type {
   Account,
   Category,
   CurrencyCode,
+  ActionProposal,
 } from '../../types';
 import {
   createTransaction,
@@ -28,6 +30,7 @@ import {
 } from '../../services/ledger';
 import { formatCurrency, getExchangeRate } from '../../services/fx';
 import { IconRenderer } from '../common/IconRenderer';
+import { ReceiptScannerModal } from '../chat/ReceiptScannerModal';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -73,8 +76,30 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [exchangeRateToBase, setExchangeRateToBase] = useState<number>(1.0);
   const [isFetchingFx, setIsFetchingFx] = useState<boolean>(false);
 
+  // Scanner Modal & Receipt Metadata state
+  const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
+  const [receiptHash, setReceiptHash] = useState<string>('');
+
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const handleProposalFromScanner = (proposal: ActionProposal) => {
+    if (proposal.data.type) setType(proposal.data.type);
+    if (proposal.data.amount) setAmount(proposal.data.amount.toString());
+    if (proposal.data.accountId) setAccountId(proposal.data.accountId);
+    if (proposal.data.categoryId) setCategoryId(proposal.data.categoryId);
+    if (proposal.data.date) setDate(proposal.data.date);
+    if (proposal.data.description) setDescription(proposal.data.description);
+    if (proposal.data.transferMeta?.toAccountId) {
+      setToAccountId(proposal.data.transferMeta.toAccountId);
+      setToAmount(proposal.data.transferMeta.toAmount?.toString() || proposal.data.amount?.toString() || '');
+    }
+    if (proposal.data.transferMeta?.feeAmount && proposal.data.transferMeta.feeAmount > 0) {
+      setHasTransferFee(true);
+      setFeeAmount(proposal.data.transferMeta.feeAmount.toString());
+    }
+    if (proposal.data.receiptHash) setReceiptHash(proposal.data.receiptHash);
+  };
 
   const activeAccounts = accounts.filter((a) => !a.isDeleted);
   const selectedAccount = activeAccounts.find((a) => a.id === accountId);
@@ -260,7 +285,8 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           tags: parsedTags,
           transferMeta,
           debtRepaymentType: isDebtRepayment ? 'principal' : undefined,
-          inputSource: 'manual',
+          inputSource: receiptHash ? 'ocr' : 'manual',
+          receiptHash: receiptHash || undefined,
         });
       }
 
@@ -363,12 +389,25 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           <span className="text-xs uppercase tracking-wider font-semibold text-slate-400">
             {transactionToEdit ? 'Edit Transaction' : 'Record New Transaction'}
           </span>
-          <button
-            onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center space-x-2">
+            {!transactionToEdit && (
+              <button
+                type="button"
+                onClick={() => setIsScannerOpen(true)}
+                className="flex items-center space-x-1.5 px-3 py-1 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 rounded-xl text-xs font-semibold transition"
+                title="Pindai bukti transfer bank atau struk belanja"
+              >
+                <Camera className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Pindai Bukti / Rekening</span>
+              </button>
+            )}
+            <button
+              onClick={onClose}
+              className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Form Body */}
@@ -717,6 +756,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Embedded Receipt & Bank Transfer Scanner Modal */}
+      <ReceiptScannerModal
+        isOpen={isScannerOpen}
+        onClose={() => setIsScannerOpen(false)}
+        accounts={accounts}
+        categories={categories}
+        baseCurrency={baseCurrency}
+        onProposalGenerated={handleProposalFromScanner}
+      />
     </div>
   );
 };

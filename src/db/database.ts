@@ -130,7 +130,7 @@ export async function initializeDatabaseSeed(): Promise<void> {
       googleDriveLinked: false,
       googleDriveClientId: DEFAULT_GOOGLE_CLIENT_ID,
       dailyBackupEnabled: true,
-      aiEnabled: false,
+      aiEnabled: true,
       aiProvider: 'gemini',
     });
   } else if (!existingSettings.googleDriveClientId || existingSettings.googleDriveClientId.includes('client_secret_')) {

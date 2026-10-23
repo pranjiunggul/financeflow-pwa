@@ -4,11 +4,10 @@ color 0B
 cd /d "%~dp0"
 
 echo ========================================================
-echo        DEPLOY FINANCEFLOW KE CLOUDFLARE PAGES
+echo        UPDATE DEPLOY FINANCEFLOW KE CLOUDFLARE PAGES
 echo ========================================================
 echo.
-echo Sedang menyiapkan deploy ke Cloudflare Pages...
-echo Browser Anda akan terbuka untuk verifikasi login akun Cloudflare.
+echo Sedang mengompilasi dan mengunggah ke Cloudflare Pages...
 echo.
 
 call npm.cmd run build
@@ -16,6 +15,7 @@ call npx.cmd wrangler pages deploy dist --project-name financeflow-pwa
 
 echo.
 echo ========================================================
-echo Deploy berhasil! Silakan salin URL .pages.dev yang muncul di atas.
+echo Deploy berhasil! Aplikasi Anda aktif di Cloudflare Pages:
+echo https://financeflow-pwa.pages.dev
 echo ========================================================
 pause

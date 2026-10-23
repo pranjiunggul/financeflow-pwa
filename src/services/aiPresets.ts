@@ -36,11 +36,11 @@ export const PRESET_AI_PROVIDERS: Omit<AIProviderConfig, 'createdAt' | 'updatedA
     baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
     modelsEndpoint: '/models',
     availableModels: [
-      'gemini-1.5-flash',
-      'gemini-1.5-pro',
-      'gemini-2.0-flash-exp',
+      'gemini-3.8-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-flash-latest',
     ],
-    selectedModel: 'gemini-1.5-flash',
+    selectedModel: 'gemini-3.8-flash',
     isEnabled: true,
   },
   {

@@ -7,7 +7,7 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "tsx tests/ledger-engine.test.ts && tsx tests/phase2-engine.test.ts && tsx tests/fx-engine.test.ts && tsx tests/phase3-analytics.test.ts && tsx tests/phase4-sync-backup.test.ts && tsx tests/phase5-unified-assistant.test.ts && tsx tests/phase6-telegram-inbox.test.ts && tsx tests/phase7-offline-intelligence.test.ts && tsx tests/phase8-ai-providers-failover.test.ts"
+    "test": "tsx tests/ledger-engine.test.ts && tsx tests/phase2-engine.test.ts && tsx tests/fx-engine.test.ts && tsx tests/phase3-analytics.test.ts && tsx tests/phase4-sync-backup.test.ts && tsx tests/phase5-unified-assistant.test.ts && tsx tests/phase6-telegram-inbox.test.ts && tsx tests/phase7-offline-intelligence.test.ts && tsx tests/phase8-ai-providers-failover.test.ts && tsx tests/ocr-bank-transactions.test.ts"
   },
   "dependencies": {
     "chart.js": "^4.6.1",

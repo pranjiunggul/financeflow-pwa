@@ -66,6 +66,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | Blob | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -75,6 +76,31 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          setSelectedImageFile(file);
+          setIsReceiptModalOpen(true);
+          break;
+        }
+      }
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    const file = e.dataTransfer.files?.[0];
+    if (file && file.type.startsWith('image/')) {
+      setSelectedImageFile(file);
+      setIsReceiptModalOpen(true);
+    }
+  };
 
   const handleSendMessage = async (textToSend?: string) => {
     const text = (textToSend || inputText).trim();
@@ -142,7 +168,12 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   const isAiConfigured = !!settings?.aiEnabled && (!!settings.aiApiKey || settings.aiProvider === 'ollama_local');
 
   return (
-    <div className="flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)] max-w-4xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+    <div
+      onPaste={handlePaste}
+      onDrop={handleDrop}
+      onDragOver={(e) => e.preventDefault()}
+      className="flex flex-col h-[calc(100vh-140px)] sm:h-[calc(100vh-120px)] max-w-4xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative"
+    >
       {/* Header */}
       <div className="p-4 px-6 border-b border-slate-800 bg-slate-950/70 flex items-center justify-between">
         <div className="flex items-center space-x-3">
@@ -341,13 +372,19 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         </button>
       </div>
 
-      {/* Receipt Scanner Modal */}
+      {/* Receipt & Bank Slip Scanner Modal */}
       <ReceiptScannerModal
         isOpen={isReceiptModalOpen}
-        onClose={() => setIsReceiptModalOpen(false)}
+        onClose={() => {
+          setIsReceiptModalOpen(false);
+          setSelectedImageFile(null);
+        }}
         accounts={accounts}
         categories={categories}
         baseCurrency={baseCurrency}
+        settings={settings}
+        masterPin={masterPin}
+        initialFile={selectedImageFile}
         onProposalGenerated={handleProposalGeneratedFromOCR}
       />
     </div>

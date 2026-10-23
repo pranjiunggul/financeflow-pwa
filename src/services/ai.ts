@@ -736,7 +736,7 @@ async function callGemini(
   context: { accounts: Account[]; categories: Category[]; baseCurrency: CurrencyCode },
   fetchFn: typeof fetch
 ): Promise<{ replyText: string; proposals: ActionProposal[]; chartView?: any }> {
-  const chosenModel = model || prov.selectedModel || 'gemini-1.5-flash';
+  const chosenModel = model || prov.selectedModel || 'gemini-3.8-flash';
   const url = `${prov.baseUrl.replace(/\/+$/, '')}/models/${chosenModel}:generateContent?key=${plainKey}`;
 
   const geminiTools = [
@@ -1057,8 +1057,8 @@ export async function sendUnifiedChatMessage(
       type: 'preset',
       protocol: settings.aiProvider === 'gemini' ? 'gemini' : 'openai_compatible',
       baseUrl: settings.aiProvider === 'gemini' ? 'https://generativelanguage.googleapis.com/v1beta' : 'https://api.openai.com/v1',
-      availableModels: [settings.aiProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini'],
-      selectedModel: settings.aiProvider === 'gemini' ? 'gemini-1.5-flash' : 'gpt-4o-mini',
+      availableModels: [settings.aiProvider === 'gemini' ? 'gemini-3.8-flash' : 'gpt-4o-mini'],
+      selectedModel: settings.aiProvider === 'gemini' ? 'gemini-3.8-flash' : 'gpt-4o-mini',
       isEnabled: true,
       createdAt: Date.now(),
       updatedAt: Date.now(),

@@ -8,7 +8,7 @@
 
 import { db } from '../db/database';
 import { parseFreeFormOffline, executeConfirmedProposal } from './ai';
-import { scanReceiptImage, createProposalFromOCR } from './ocr';
+import { scanReceiptImage, scanReceiptWithAI, createProposalFromOCR } from './ocr';
 import { encryptData, decryptData, type EncryptedPayload } from './crypto';
 import type {
   TelegramInboxItem,
@@ -93,11 +93,21 @@ export async function parseTelegramItemToProposal(
   if (item.type === 'photo' && item.photoBase64) {
     try {
       const blob = base64ToBlob(item.photoBase64);
-      const ocrResult = await scanReceiptImage(blob);
+      let ocrResult: any = null;
+      if (_settings?.aiEnabled) {
+        try {
+          ocrResult = await scanReceiptWithAI(blob, { accounts, categories, baseCurrency, settings: _settings });
+        } catch (aiErr) {
+          console.warn('Telegram AI vision failed, falling back to local OCR:', aiErr);
+        }
+      }
+      if (!ocrResult) {
+        ocrResult = await scanReceiptImage(blob);
+      }
       proposal = createProposalFromOCR(ocrResult, accounts, categories, baseCurrency);
       proposal.summary = `[Telegram Photo OCR] ${proposal.summary}`;
       proposal.data.inputSource = 'telegram';
-      if (item.rawText && (!proposal.data.description || proposal.data.description === 'Receipt Purchase')) {
+      if (item.rawText && (!proposal.data.description || proposal.data.description === 'Receipt Purchase' || proposal.data.description === 'Transaksi')) {
         proposal.data.description = item.rawText;
       }
     } catch (err) {
