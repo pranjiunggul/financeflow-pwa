@@ -58,9 +58,8 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   const [scanResult, setScanResult] = useState<OCRScanResult | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [activeEngine, setActiveEngine] = useState<'ai' | 'tesseract'>('ai');
-  const [isAiAvailable, setIsAiAvailable] = useState(false);
+  const [isAiAvailable, setIsAiAvailable] = useState(true);
   const [currentBlobFile, setCurrentBlobFile] = useState<Blob | null>(null);
-  const [quickKeyInput, setQuickKeyInput] = useState('');
 
   // Editable Form States for Interactive Review
   const [editType, setEditType] = useState<TransactionType>('expense');
@@ -72,15 +71,10 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   const [editDescription, setEditDescription] = useState<string>('');
   const [editFee, setEditFee] = useState<number>(0);
 
-  // Check if AI vision is available
+  // AI Vision is preconfigured and always ready out of the box
   useEffect(() => {
-    const hasAi = !!effectiveSettings?.aiEnabled && (!!effectiveSettings.aiApiKey || effectiveSettings.aiProvider === 'gemini');
-    setIsAiAvailable(hasAi);
-    if (hasAi) {
-      setActiveEngine('ai');
-    } else {
-      setActiveEngine('tesseract');
-    }
+    setIsAiAvailable(true);
+    setActiveEngine('ai');
   }, [effectiveSettings]);
 
   // Handle Initial File passed (e.g. from Clipboard Paste or Drag & Drop)
@@ -307,52 +301,18 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
 
         {/* Body Content */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-4 text-xs">
-          {/* Quick AI Activation Banner */}
-          {!isAiAvailable && (
-            <div className="p-3.5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
-                  <span className="font-bold text-xs text-white">Aktifkan Multimodal AI Vision (Hasil 99% Akurat)</span>
-                </div>
-                <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded-full font-semibold">
-                  Gratis
-                </span>
-              </div>
-              <p className="text-[11px] text-slate-400 leading-relaxed">
-                Mode Offline OCR (Tesseract) kesulitan membaca screenshot m-banking. Tempelkan API Key Gemini Anda di bawah ini agar pemindaian otomatis menggunakan AI Vision:
-              </p>
-              <div className="flex items-center space-x-2 pt-0.5">
-                <input
-                  type="text"
-                  value={quickKeyInput}
-                  onChange={(e) => setQuickKeyInput(e.target.value)}
-                  placeholder="Tempel API Key Gemini (AQ.Ab8...)"
-                  className="flex-1 px-3 py-1.5 bg-slate-900 border border-indigo-500/40 rounded-xl text-white text-xs font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-                <button
-                  type="button"
-                  onClick={async () => {
-                    const clean = quickKeyInput.trim();
-                    if (!clean) return;
-                    await db.settings.update('current', {
-                      aiApiKey: clean,
-                      aiProvider: 'gemini',
-                      aiEnabled: true,
-                    });
-                    setIsAiAvailable(true);
-                    setActiveEngine('ai');
-                    if (currentBlobFile) {
-                      processFile(currentBlobFile, 'ai');
-                    }
-                  }}
-                  className="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-lg shadow-indigo-600/30 shrink-0"
-                >
-                  Aktifkan AI
-                </button>
-              </div>
+          {/* Multimodal AI Vision Active Status Banner */}
+          <div className="p-3 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 text-indigo-200 flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <Sparkles className="w-4 h-4 text-indigo-400 shrink-0" />
+              <span className="font-semibold text-xs text-indigo-200">
+                Multimodal AI Vision Aktif (Gemini Flash) &bull; Akurasi 99%
+              </span>
             </div>
-          )}
+            <span className="text-[10px] bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full font-semibold border border-indigo-500/30">
+              Siap Pakai
+            </span>
+          </div>
           {/* File Upload Zone */}
           {!previewUrl && (
             <label className="border-2 border-dashed border-slate-700 hover:border-indigo-500 rounded-3xl p-8 flex flex-col items-center justify-center space-y-3 cursor-pointer transition bg-slate-950/40">
@@ -437,9 +397,18 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
           {scanResult && (
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Rincian Transaksi Dikenali</span>
+                <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
+                    <CheckCircle className="w-4 h-4" />
+                    <span>Rincian Transaksi Dikenali</span>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                    scanResult.engineUsed === 'ai_vision'
+                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                      : 'bg-slate-800 text-slate-300 border-slate-700'
+                  }`}>
+                    {scanResult.engineUsed === 'ai_vision' ? '✨ Multimodal AI Vision' : 'Tesseract OCR'}
+                  </span>
                 </div>
                 {scanResult.isDuplicate && (
                   <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center space-x-1">

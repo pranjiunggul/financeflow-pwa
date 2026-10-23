@@ -37,7 +37,9 @@ export const PRESET_AI_PROVIDERS: Omit<AIProviderConfig, 'createdAt' | 'updatedA
     modelsEndpoint: '/models',
     availableModels: [
       'gemini-3.8-flash',
+      'gemini-3.5-flash',
       'gemini-3.5-flash-lite',
+      'gemini-2.5-flash',
       'gemini-flash-latest',
     ],
     selectedModel: 'gemini-3.8-flash',

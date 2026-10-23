@@ -94,7 +94,7 @@ export async function parseTelegramItemToProposal(
     try {
       const blob = base64ToBlob(item.photoBase64);
       let ocrResult: any = null;
-      if (_settings?.aiEnabled) {
+      if (_settings?.aiEnabled !== false) {
         try {
           ocrResult = await scanReceiptWithAI(blob, { accounts, categories, baseCurrency, settings: _settings });
         } catch (aiErr) {

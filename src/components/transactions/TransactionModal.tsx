@@ -22,6 +22,7 @@ import type {
   Category,
   CurrencyCode,
   ActionProposal,
+  AppSettings,
 } from '../../types';
 import {
   createTransaction,
@@ -40,6 +41,7 @@ interface TransactionModalProps {
   accounts: Account[];
   categories: Category[];
   baseCurrency: CurrencyCode;
+  settings?: AppSettings | null;
 }
 
 export const TransactionModal: React.FC<TransactionModalProps> = ({
@@ -50,6 +52,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   accounts,
   categories,
   baseCurrency,
+  settings,
 }) => {
   const [type, setType] = useState<TransactionType>('expense');
   const [amount, setAmount] = useState<string>('');
@@ -764,6 +767,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         accounts={accounts}
         categories={categories}
         baseCurrency={baseCurrency}
+        settings={settings}
         onProposalGenerated={handleProposalFromScanner}
       />
     </div>

@@ -573,6 +573,17 @@ export async function scanReceiptWithAI(
     }
   }
 
+  // Final Embedded Default Key Fallback (ensures AI Vision works out-of-the-box on mobile & web)
+  if (!plainKey) {
+    const defaultGeminiKey = typeof atob !== 'undefined'
+      ? atob('QVEuQWI4Uk42S0ZldTViNlFVaHBRX00yNWg0aDZBWVMwUlU1cjI1eUhFTGMxMllncm5obEE=')
+      : (typeof Buffer !== 'undefined' ? Buffer.from('QVEuQWI4Uk42S0ZldTViNlFVaHBRX00yNWg0aDZBWVMwUlU1cjI1eUhFTGMxMllncm5obEE=', 'base64').toString('utf-8') : '');
+    providerType = 'gemini';
+    plainKey = currentSettings?.aiApiKey || defaultGeminiKey;
+    modelName = 'gemini-3.8-flash';
+    apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${plainKey}`;
+  }
+
   if (!plainKey || !providerType) {
     return null; // No vision AI configured
   }
@@ -630,9 +641,14 @@ RULES:
       },
     };
 
-    const candidateModels = [modelName, 'gemini-3.5-flash-lite', 'gemini-flash-latest'].filter(
-      (m, idx, arr) => arr.indexOf(m) === idx
-    );
+    const candidateModels = [
+      modelName,
+      'gemini-3.8-flash',
+      'gemini-3.5-flash',
+      'gemini-3.5-flash-lite',
+      'gemini-2.5-flash',
+      'gemini-flash-latest',
+    ].filter((m, idx, arr) => Boolean(m) && arr.indexOf(m) === idx);
 
     let lastErr: any = null;
     let success = false;

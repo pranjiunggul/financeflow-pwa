@@ -288,6 +288,7 @@ export const App: React.FC = () => {
         accounts={accounts}
         categories={categories}
         baseCurrency={baseCurrency}
+        settings={settings}
       />
 
       <AccountModal
