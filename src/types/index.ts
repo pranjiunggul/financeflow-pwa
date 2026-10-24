@@ -46,6 +46,8 @@ export interface Category {
 
 export type TransactionType = 'income' | 'expense' | 'transfer' | 'debt' | 'receivable';
 
+export type TaxTreatmentType = 'not_applicable' | 'withheld_at_source' | 'needs_self_calculation';
+
 export interface TransferMeta {
   toAccountId: string;        // Destination account
   toAmount: number;           // Amount credited to destination account (in toAccount currency)
@@ -87,6 +89,12 @@ export interface Transaction {
   receiptHash?: string;       // SHA-256 for duplicate check
   rawOcrText?: string;
   inputSource: 'manual' | 'ocr' | 'telegram' | 'voice' | 'recurring' | 'ai';
+
+  // Feature: Indonesian Personal Income Tax (PPh) Estimator
+  taxTreatment?: TaxTreatmentType;
+  grossAmount?: number;         // Gross income before tax withholding (for tax calculation)
+  taxWithheldAmount?: number;   // Tax deducted at source / bukti potong (tax credit)
+  taxSourceLabel?: string;      // Freeform identifier e.g. "Shopee Affiliate", "TikTok Creator"
 
   // Sync & Audit
   createdAt: number;
@@ -221,6 +229,55 @@ export interface AppSettings {
   telegramWorkerSecretEnc?: EncryptedPayload;
   telegramWorkerSecretMasked?: string;
   telegramLastActiveAt?: number;
+
+  // Feature: Indonesian Personal Income Tax (PPh) Estimator
+  taxEstimatorAcknowledged?: boolean;
+  taxEstimatorEnabled?: boolean;
+  taxSettings?: TaxSettings;
+}
+
+// Indonesian Personal Income Tax (PPh) Estimator Types
+export interface TaxBracketConfig {
+  id: string;
+  label: string;
+  upTo: number | null; // null for highest bracket (e.g. above 5M IDR)
+  rate: number;        // e.g. 0.05 for 5%, 0.15 for 15%
+}
+
+export interface TaxSettings {
+  selectedPtkpStatus: string;         // e.g. 'TK/0', 'K/1'
+  customPtkpAmount?: number;          // direct override if user edits number directly
+  otherExternalGrossIncome?: number;  // other income already accounted for elsewhere (e.g. salary from employer)
+  otherExternalTaxWithheld?: number;  // tax already withheld on other income (e.g. 1721-A1)
+  brackets: TaxBracketConfig[];       // progressive bracket configuration
+  lastUpdatedYear?: number;
+}
+
+export interface BracketTaxDetail {
+  bracketId: string;
+  label: string;
+  rate: number;
+  taxableAmountInBracket: number;
+  taxAmountInBracket: number;
+}
+
+export interface AnnualPPhCalculationResult {
+  year: number;
+  flaggedIncomeCount: number;
+  flaggedGrossIncome: number;
+  flaggedNetReceived: number;
+  otherExternalGrossIncome: number;
+  totalGrossTaxableIncome: number;
+  ptkpStatus: string;
+  ptkpAmount: number;
+  pkp: number;
+  bracketsBreakdown: BracketTaxDetail[];
+  totalPPhTerutang: number;
+  flaggedTaxWithheld: number;
+  otherExternalTaxWithheld: number;
+  totalTaxCredits: number;
+  estimatedBalance: number; // positive = kurang bayar (underpaid), negative = lebih bayar (overpaid)
+  status: 'kurang_bayar' | 'lebih_bayar' | 'nihil';
 }
 
 // Phase 4 Sync & Multi-Device Types

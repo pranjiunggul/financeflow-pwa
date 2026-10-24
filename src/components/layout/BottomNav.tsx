@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from '../../i18n';
 
-export type TabKey = 'dashboard' | 'transactions' | 'chat' | 'accounts' | 'categories' | 'debts' | 'settings';
+export type TabKey = 'dashboard' | 'transactions' | 'chat' | 'accounts' | 'categories' | 'debts' | 'settings' | 'tax';
 
 interface BottomNavProps {
   currentTab: TabKey;

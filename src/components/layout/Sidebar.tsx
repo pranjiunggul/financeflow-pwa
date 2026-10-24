@@ -11,6 +11,7 @@ import {
   Repeat,
   ShieldCheck,
   Send,
+  Scale,
 } from 'lucide-react';
 import type { TabKey } from './BottomNav';
 import { useTranslation } from '../../i18n';
@@ -100,6 +101,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <History className="w-4 h-4 text-blue-400" />
           <span>{t('nav.audit')}</span>
+        </button>
+
+        <button
+          onClick={() => onSelectTab('tax')}
+          className={`w-full flex items-center space-x-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition ${
+            currentTab === 'tax'
+              ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30'
+              : 'text-slate-400 hover:text-white hover:bg-slate-900/60'
+          }`}
+        >
+          <Scale className="w-4 h-4 text-emerald-400" />
+          <span>Estimator Pajak (PPh)</span>
         </button>
       </div>
 

@@ -426,6 +426,16 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
                                   Fee: {formatCurrency(tx.transferMeta.feeAmount, tx.currency)}
                                 </span>
                               )}
+                              {tx.taxTreatment === 'withheld_at_source' && (
+                                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded font-medium">
+                                  PPh Dipotong{tx.taxSourceLabel ? ` • ${tx.taxSourceLabel}` : ''}
+                                </span>
+                              )}
+                              {tx.taxTreatment === 'needs_self_calculation' && (
+                                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-1.5 py-0.5 rounded font-medium">
+                                  PPh Sendiri{tx.taxSourceLabel ? ` • ${tx.taxSourceLabel}` : ''}
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
                               <span>{tx.time || '12:00'}</span>

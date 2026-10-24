@@ -25,6 +25,8 @@ import { CategoriesView } from './components/categories/CategoriesView';
 import { DebtsView } from './components/debts/DebtsView';
 import { SettingsView } from './components/settings/SettingsView';
 import { AIChatView } from './components/chat/AIChatView';
+import { TaxEstimatorView } from './components/tax/TaxEstimatorView';
+import { TaxDisclaimerModal } from './components/tax/TaxDisclaimerModal';
 import { evaluateProactiveFinancialAlerts } from './services/advisor';
 import { startHealthCheckScheduler } from './services/aiHealth';
 
@@ -69,6 +71,7 @@ export const App: React.FC = () => {
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
   const [isBulkHistoryModalOpen, setIsBulkHistoryModalOpen] = useState(false);
+  const [isTaxDisclaimerOpen, setIsTaxDisclaimerOpen] = useState(false);
   const [activeConflicts, setActiveConflicts] = useState<SyncConflictRecord[]>([]);
 
   // Live Dexie database queries
@@ -186,6 +189,14 @@ export const App: React.FC = () => {
     );
   }
 
+  const handleSelectTab = (tab: TabKey) => {
+    if (tab === 'tax' && !settings?.taxEstimatorAcknowledged) {
+      setIsTaxDisclaimerOpen(true);
+      return;
+    }
+    setCurrentTab(tab);
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Top Navbar */}
@@ -206,7 +217,7 @@ export const App: React.FC = () => {
         {/* Desktop Sidebar */}
         <Sidebar
           currentTab={currentTab}
-          onSelectTab={setCurrentTab}
+          onSelectTab={handleSelectTab}
           onOpenAuditLogs={() => setIsAuditModalOpen(true)}
           onOpenRecurringRules={() => setIsRecurringModalOpen(true)}
           onOpenTelegramInbox={() => setIsTelegramModalOpen(true)}
@@ -223,7 +234,7 @@ export const App: React.FC = () => {
               baseCurrency={baseCurrency}
               onOpenNewTransaction={handleOpenNewTransaction}
               onEditTransaction={handleEditTransaction}
-              onSelectTab={setCurrentTab}
+              onSelectTab={handleSelectTab}
               onOpenExportReport={() => setIsExportReportOpen(true)}
             />
           )}
@@ -257,7 +268,7 @@ export const App: React.FC = () => {
               settings={settings || null}
               masterPin={sessionPin}
               onOpenSettings={() => setCurrentTab('settings')}
-              onNavigateTab={(tab) => setCurrentTab(tab as any)}
+              onNavigateTab={(tab) => handleSelectTab(tab as any)}
             />
           )}
 
@@ -280,6 +291,14 @@ export const App: React.FC = () => {
             />
           )}
 
+          {currentTab === 'tax' && (
+            <TaxEstimatorView
+              baseCurrency={baseCurrency}
+              onEditTransaction={handleEditTransaction}
+              onOpenNewTransactionModal={() => handleOpenNewTransaction('income')}
+            />
+          )}
+
           {currentTab === 'settings' && (
             <SettingsView
               settings={settings || null}
@@ -296,7 +315,7 @@ export const App: React.FC = () => {
       </div>
 
       {/* Mobile Bottom Navigation */}
-      <BottomNav currentTab={currentTab} onSelectTab={setCurrentTab} />
+      <BottomNav currentTab={currentTab} onSelectTab={handleSelectTab} />
 
       {/* Modals */}
       <TransactionModal
@@ -382,6 +401,18 @@ export const App: React.FC = () => {
         baseCurrency={baseCurrency}
         settings={settings || null}
         masterPin={sessionPin}
+      />
+
+      {/* Indonesian PPh Tax Estimator First-Use Disclaimer Gate */}
+      <TaxDisclaimerModal
+        isOpen={isTaxDisclaimerOpen}
+        onAcknowledge={() => {
+          setIsTaxDisclaimerOpen(false);
+          setCurrentTab('tax');
+        }}
+        onCancel={() => {
+          setIsTaxDisclaimerOpen(false);
+        }}
       />
 
       {/* App Lock Screen Overlay */}

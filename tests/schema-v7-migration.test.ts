@@ -212,8 +212,8 @@ async function runMigrationTest() {
   const upgradedDb = new FinanceDatabase(DB_NAME);
   await upgradedDb.open();
   console.log(`Upgraded database opened at schema version: ${upgradedDb.verno}`);
-  if (upgradedDb.verno !== 7) {
-    throw new Error(`Migration failed: expected version 7, got ${upgradedDb.verno}`);
+  if (upgradedDb.verno < 7) {
+    throw new Error(`Migration failed: expected version >= 7, got ${upgradedDb.verno}`);
   }
   console.log('[PASS] Schema version successfully migrated from 6 -> 7.\n');
 

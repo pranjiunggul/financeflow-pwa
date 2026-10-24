@@ -447,6 +447,10 @@ export async function executeConfirmedProposal(
         date: targetDate,
         inputSource: 'ai',
         transferMeta: transferMeta,
+        taxTreatment: proposal.data.taxTreatment,
+        grossAmount: proposal.data.grossAmount,
+        taxWithheldAmount: proposal.data.taxWithheldAmount,
+        taxSourceLabel: proposal.data.taxSourceLabel,
       });
       break;
     }

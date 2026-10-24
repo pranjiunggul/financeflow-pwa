@@ -95,6 +95,10 @@ export class FinanceDatabase extends Dexie {
       asset_valuations: 'id, assetId, date, createdAt',
       achievements: 'id, type, unlockedAt',
     });
+
+    this.version(8).stores({
+      transactions: 'id, type, date, timestamp, accountId, categoryId, currency, debtReceivableId, receiptHash, inputSource, taxTreatment, isDeleted, updatedAt',
+    });
   }
 }
 

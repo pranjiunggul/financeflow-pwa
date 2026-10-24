@@ -43,6 +43,10 @@ export function exportTransactionsToCSV(
     'TransferToAccount',
     'TransferFee',
     'Tags',
+    'TaxTreatment',
+    'GrossAmount',
+    'TaxWithheldAmount',
+    'TaxSourceLabel',
   ];
 
   const rows = transactions.map((tx) => {
@@ -63,6 +67,10 @@ export function exportTransactionsToCSV(
       escapeCSV(toAccName),
       escapeCSV(fee),
       escapeCSV(tx.tags?.join('; ') || ''),
+      escapeCSV(tx.taxTreatment || ''),
+      escapeCSV(tx.grossAmount || ''),
+      escapeCSV(tx.taxWithheldAmount || ''),
+      escapeCSV(tx.taxSourceLabel || ''),
     ].join(',');
   });
 
@@ -87,6 +95,10 @@ export function parseCSVToTransactions(
   const descIdx = headers.findIndex((h) => h.includes('desc') || h.includes('note') || h.includes('payee'));
   const typeIdx = headers.findIndex((h) => h.includes('type'));
   const currIdx = headers.findIndex((h) => h.includes('curr'));
+  const taxTreatmentIdx = headers.findIndex((h) => h.includes('taxtreatment'));
+  const grossAmountIdx = headers.findIndex((h) => h.includes('grossamount'));
+  const taxWithheldIdx = headers.findIndex((h) => h.includes('taxwithheld'));
+  const taxLabelIdx = headers.findIndex((h) => h.includes('taxsourcelabel') || h.includes('taxlabel'));
 
   const parsed: Array<Partial<Transaction>> = [];
 
@@ -116,6 +128,14 @@ export function parseCSVToTransactions(
     const rawType = (typeIdx !== -1 && tokens[typeIdx] ? tokens[typeIdx].toLowerCase() : rawAmount < 0 ? 'expense' : 'income') as any;
     const finalAmount = Math.abs(rawAmount);
 
+    const validTaxTreatments = ['not_applicable', 'withheld_at_source', 'needs_self_calculation'];
+    const rawTaxTreatment = taxTreatmentIdx !== -1 && validTaxTreatments.includes(tokens[taxTreatmentIdx])
+      ? (tokens[taxTreatmentIdx] as any)
+      : undefined;
+    const rawGross = grossAmountIdx !== -1 && tokens[grossAmountIdx] ? parseFloat(tokens[grossAmountIdx]) : undefined;
+    const rawWithheld = taxWithheldIdx !== -1 && tokens[taxWithheldIdx] ? parseFloat(tokens[taxWithheldIdx]) : undefined;
+    const rawTaxLabel = taxLabelIdx !== -1 && tokens[taxLabelIdx] ? tokens[taxLabelIdx] : undefined;
+
     parsed.push({
       date: rawDate,
       amount: finalAmount,
@@ -127,6 +147,10 @@ export function parseCSVToTransactions(
       accountId: defaultAccountId,
       categoryId: defaultCategoryId,
       inputSource: 'manual',
+      taxTreatment: rawTaxTreatment,
+      grossAmount: !isNaN(rawGross as number) ? rawGross : undefined,
+      taxWithheldAmount: !isNaN(rawWithheld as number) ? rawWithheld : undefined,
+      taxSourceLabel: rawTaxLabel || undefined,
     });
   }
 

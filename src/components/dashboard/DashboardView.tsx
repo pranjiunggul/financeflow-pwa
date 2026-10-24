@@ -13,6 +13,7 @@ import {
   Sparkles,
   CreditCard,
   Target,
+  Scale,
   X,
 } from 'lucide-react';
 import type {
@@ -123,6 +124,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const recentTransactions = [...activeTransactions]
     .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0))
     .slice(0, 5);
+
+  // 4. Tax Estimator Flagged Transactions in Current Year
+  const currentYear = new Date().getFullYear();
+  const currentYearPrefix = `${currentYear}-`;
+  const flaggedTaxTransactions = activeTransactions.filter(
+    (t) =>
+      t.type === 'income' &&
+      t.date.startsWith(currentYearPrefix) &&
+      (t.taxTreatment === 'withheld_at_source' || t.taxTreatment === 'needs_self_calculation')
+  );
+  const taxSummaryGross = flaggedTaxTransactions.reduce(
+    (sum, t) => sum + (t.grossAmount || t.amount),
+    0
+  );
+  const taxSummaryWithheld = flaggedTaxTransactions.reduce(
+    (sum, t) => sum + (t.taxWithheldAmount || 0),
+    0
+  );
 
   return (
     <div className="space-y-6 pb-20 sm:pb-8">
@@ -340,6 +359,35 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* Feature: Indonesian Personal Income Tax (PPh) Estimator Glance */}
+      {flaggedTaxTransactions.length > 0 && (
+        <div className="p-4 sm:p-5 rounded-3xl bg-emerald-950/20 border border-emerald-900/40 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-emerald-500/10 text-emerald-400 rounded-2xl border border-emerald-500/20 shrink-0">
+              <Scale className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center space-x-2">
+                <h3 className="text-sm font-bold text-white">Estimasi Pajak Penghasilan ({currentYear})</h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 font-medium">
+                  {flaggedTaxTransactions.length} transaksi berbendera pajak
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Total bruto: {formatCurrency(taxSummaryGross, baseCurrency)} {taxSummaryWithheld > 0 ? `• Pajak dipotong: ${formatCurrency(taxSummaryWithheld, baseCurrency)}` : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => onSelectTab('tax')}
+            className="flex items-center justify-center space-x-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl shadow-lg shadow-emerald-950/40 transition shrink-0"
+          >
+            <span>Buka Estimator Pajak</span>
+            <ChevronRight className="w-3.5 h-3.5" />
+          </button>
         </div>
       )}
 

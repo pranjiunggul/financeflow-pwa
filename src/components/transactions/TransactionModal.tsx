@@ -20,6 +20,7 @@ import {
 import type {
   Transaction,
   TransactionType,
+  TaxTreatmentType,
   Account,
   Category,
   CurrencyCode,
@@ -84,6 +85,12 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [personName, setPersonName] = useState<string>('');
   const [dueDate, setDueDate] = useState<string>('');
   const [isDebtRepayment, setIsDebtRepayment] = useState<boolean>(false);
+
+  // Indonesian Personal Income Tax (PPh) Estimator fields
+  const [taxTreatment, setTaxTreatment] = useState<TaxTreatmentType>('not_applicable');
+  const [taxWithheldAmount, setTaxWithheldAmount] = useState<string>('');
+  const [grossAmount, setGrossAmount] = useState<string>('');
+  const [taxSourceLabel, setTaxSourceLabel] = useState<string>('');
 
   // FX state
   const [exchangeRateToBase, setExchangeRateToBase] = useState<number>(1.0);
@@ -184,6 +191,18 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           setHasTransferFee(false);
         }
       }
+
+      if (transactionToEdit.taxTreatment) {
+        setTaxTreatment(transactionToEdit.taxTreatment);
+        setTaxWithheldAmount(transactionToEdit.taxWithheldAmount ? transactionToEdit.taxWithheldAmount.toString() : '');
+        setGrossAmount(transactionToEdit.grossAmount ? transactionToEdit.grossAmount.toString() : '');
+        setTaxSourceLabel(transactionToEdit.taxSourceLabel || '');
+      } else {
+        setTaxTreatment('not_applicable');
+        setTaxWithheldAmount('');
+        setGrossAmount('');
+        setTaxSourceLabel('');
+      }
     } else {
       const now = new Date();
       setType(initialType || 'expense');
@@ -200,6 +219,10 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       setPersonName('');
       setDueDate('');
       setIsDebtRepayment(false);
+      setTaxTreatment('not_applicable');
+      setTaxWithheldAmount('');
+      setGrossAmount('');
+      setTaxSourceLabel('');
     }
     setErrorMessage('');
   }, [transactionToEdit, isOpen, activeAccounts.length]);
@@ -308,6 +331,23 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
       const dateObj = new Date(`${date}T${time || '12:00'}`);
       const timestamp = dateObj.getTime() || Date.now();
 
+      const parsedWithheld = taxTreatment === 'withheld_at_source' ? parseFloat(taxWithheldAmount) || 0 : undefined;
+      const parsedGross = type === 'income' && taxTreatment !== 'not_applicable'
+        ? (parseFloat(grossAmount) || (numAmount + (parsedWithheld || 0)))
+        : undefined;
+
+      const taxPayload = type === 'income' ? {
+        taxTreatment,
+        grossAmount: parsedGross,
+        taxWithheldAmount: parsedWithheld,
+        taxSourceLabel: taxSourceLabel.trim() || undefined,
+      } : {
+        taxTreatment: 'not_applicable' as TaxTreatmentType,
+        grossAmount: undefined,
+        taxWithheldAmount: undefined,
+        taxSourceLabel: undefined,
+      };
+
       if (transactionToEdit) {
         await updateTransaction(transactionToEdit.id, {
           type,
@@ -323,6 +363,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           description: description.trim() || `${type.toUpperCase()} transaction`,
           tags: parsedTags,
           transferMeta,
+          ...taxPayload,
         });
       } else {
         await createTransaction({
@@ -342,6 +383,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           debtRepaymentType: isDebtRepayment ? 'principal' : undefined,
           inputSource: receiptHash ? 'ocr' : 'manual',
           receiptHash: receiptHash || undefined,
+          ...taxPayload,
         });
       }
 
@@ -721,6 +763,162 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   <span className="text-xs font-semibold">+ New</span>
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Feature: Indonesian Personal Income Tax (PPh) Treatment (for Income) */}
+          {type === 'income' && (
+            <div className="p-4 bg-emerald-950/20 border border-emerald-900/40 rounded-2xl space-y-3.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Receipt className="w-4 h-4 text-emerald-400" />
+                  <span className="text-xs font-bold text-emerald-300 uppercase tracking-wider">
+                    Perlakuan Pajak Penghasilan (PPh)
+                  </span>
+                </div>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-900/60 text-emerald-300 font-medium">
+                  Estimator
+                </span>
+              </div>
+
+              {/* 3 Option Pills */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTaxTreatment('not_applicable')}
+                  className={`p-2.5 rounded-xl border text-xs font-semibold transition text-left sm:text-center ${
+                    taxTreatment === 'not_applicable'
+                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
+                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold">Bukan Objek / N/A</div>
+                  <div className="text-[10px] text-slate-400 font-normal">Transfer, hadiah, dsb.</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTaxTreatment('withheld_at_source')}
+                  className={`p-2.5 rounded-xl border text-xs font-semibold transition text-left sm:text-center ${
+                    taxTreatment === 'withheld_at_source'
+                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
+                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold">Dipotong Pihak Lain</div>
+                  <div className="text-[10px] text-slate-400 font-normal">Ada bukti potong (Shopee, dll)</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setTaxTreatment('needs_self_calculation')}
+                  className={`p-2.5 rounded-xl border text-xs font-semibold transition text-left sm:text-center ${
+                    taxTreatment === 'needs_self_calculation'
+                      ? 'border-emerald-500 bg-emerald-500/20 text-emerald-300 ring-1 ring-emerald-500/40'
+                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="font-bold">Hitung Sendiri</div>
+                  <div className="text-[10px] text-slate-400 font-normal">Belum dipotong (TikTok, dll)</div>
+                </button>
+              </div>
+
+              {/* Sub-fields for Withheld at source */}
+              {taxTreatment === 'withheld_at_source' && (
+                <div className="p-3 bg-slate-900/70 border border-slate-800/80 rounded-xl space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] text-slate-300 mb-1">
+                        Pajak Dipotong / Bukti Potong ({selectedAccount?.currency || baseCurrency})
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={taxWithheldAmount}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setTaxWithheldAmount(val);
+                          const net = parseFloat(amount) || 0;
+                          const w = parseFloat(val) || 0;
+                          setGrossAmount((net + w).toString());
+                        }}
+                        placeholder="Contoh: 500000"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white font-mono text-sm"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Akan dicatat sebagai kredit pajak (pengurang PPh terutang).
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] text-slate-300 mb-1">
+                        Penghasilan Bruto ({selectedAccount?.currency || baseCurrency})
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={grossAmount}
+                        onChange={(e) => setGrossAmount(e.target.value)}
+                        placeholder="Bruto sebelum potong pajak"
+                        className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-emerald-400 font-mono text-sm font-bold"
+                      />
+                      <span className="text-[10px] text-slate-400 mt-1 block">
+                        Net masuk rekening: {amount ? `${amount} ${selectedAccount?.currency || baseCurrency}` : '0'}.
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-fields for Needs self calculation */}
+              {taxTreatment === 'needs_self_calculation' && (
+                <div className="p-3 bg-slate-900/70 border border-slate-800/80 rounded-xl space-y-2">
+                  <div>
+                    <label className="block text-[11px] text-slate-300 mb-1">
+                      Penghasilan Bruto Kena Pajak ({selectedAccount?.currency || baseCurrency})
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      value={grossAmount || amount}
+                      onChange={(e) => setGrossAmount(e.target.value)}
+                      placeholder="Bruto kena pajak"
+                      className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-emerald-400 font-mono text-sm font-bold"
+                    />
+                    <span className="text-[10px] text-slate-400 mt-1 block">
+                      Akan diakumulasikan ke perhitungan tarif progresif tahunan di menu Pajak.
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Source label tag */}
+              {taxTreatment !== 'not_applicable' && (
+                <div>
+                  <label className="block text-[11px] text-slate-300 mb-1">
+                    Label Sumber Penghasilan / Keterangan Pajak (Opsional)
+                  </label>
+                  <input
+                    type="text"
+                    value={taxSourceLabel}
+                    onChange={(e) => setTaxSourceLabel(e.target.value)}
+                    placeholder="Contoh: Shopee Affiliate, TikTok Affiliate, Google AdSense"
+                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-lg text-white text-xs mb-1.5"
+                  />
+                  <div className="flex flex-wrap gap-1.5">
+                    {['Shopee Affiliate', 'TikTok Creator', 'Google AdSense', 'Klien Freelance', 'Royalti / Lisensi'].map((chip) => (
+                      <button
+                        key={chip}
+                        type="button"
+                        onClick={() => setTaxSourceLabel(chip)}
+                        className="text-[10px] px-2 py-0.5 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                      >
+                        + {chip}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
