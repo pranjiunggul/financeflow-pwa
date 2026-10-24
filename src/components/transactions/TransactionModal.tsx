@@ -14,6 +14,7 @@ import {
   AlertCircle,
   RefreshCw,
   Camera,
+  Plus,
 } from 'lucide-react';
 import type {
   Transaction,
@@ -32,6 +33,8 @@ import {
 import { formatCurrency, getExchangeRate } from '../../services/fx';
 import { IconRenderer } from '../common/IconRenderer';
 import { ReceiptScannerModal } from '../chat/ReceiptScannerModal';
+import { QuickAddCategoryModal } from '../shared/QuickAddCategoryModal';
+import { QuickAddAccountModal } from '../shared/QuickAddAccountModal';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -82,6 +85,11 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   // Scanner Modal & Receipt Metadata state
   const [isScannerOpen, setIsScannerOpen] = useState<boolean>(false);
   const [receiptHash, setReceiptHash] = useState<string>('');
+
+  // Quick Add states
+  const [isQuickAddCategoryOpen, setIsQuickAddCategoryOpen] = useState<boolean>(false);
+  const [isQuickAddAccountOpen, setIsQuickAddAccountOpen] = useState<boolean>(false);
+  const [isQuickAddToAccountOpen, setIsQuickAddToAccountOpen] = useState<boolean>(false);
 
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -456,9 +464,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
 
           {/* Account Selection */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              {type === 'transfer' ? 'From Account (Source)' : 'Account'}
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                {type === 'transfer' ? 'From Account (Source)' : 'Account'}
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsQuickAddAccountOpen(true)}
+                className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Account</span>
+              </button>
+            </div>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
               {activeAccounts.map((acc) => (
                 <button
@@ -482,6 +500,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                   </span>
                 </button>
               ))}
+              <button
+                type="button"
+                onClick={() => setIsQuickAddAccountOpen(true)}
+                className="p-3 rounded-2xl border border-dashed border-slate-700 hover:border-indigo-500/60 bg-slate-900/30 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition flex flex-col items-center justify-center space-y-1 text-center"
+              >
+                <Plus className="w-4 h-4" />
+                <span className="text-xs font-semibold">+ New Account</span>
+              </button>
             </div>
           </div>
 
@@ -489,9 +515,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           {type === 'transfer' && (
             <div className="p-4 bg-indigo-950/20 border border-indigo-900/40 rounded-2xl space-y-4">
               <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-indigo-300 uppercase tracking-wider">
-                  To Account (Destination)
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-semibold text-indigo-300 uppercase tracking-wider">
+                    To Account (Destination)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickAddToAccountOpen(true)}
+                    className="text-[11px] font-bold text-indigo-400 hover:text-indigo-300 flex items-center space-x-1 transition"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Add Account</span>
+                  </button>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {activeAccounts
                     .filter((a) => a.id !== accountId)
@@ -517,6 +553,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                         </span>
                       </button>
                     ))}
+                  <button
+                    type="button"
+                    onClick={() => setIsQuickAddToAccountOpen(true)}
+                    className="p-3 rounded-2xl border border-dashed border-slate-700 hover:border-indigo-500/60 bg-slate-900/30 hover:bg-indigo-500/10 text-slate-400 hover:text-indigo-300 transition flex flex-col items-center justify-center space-y-1 text-center"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span className="text-xs font-semibold">+ New Account</span>
+                  </button>
                 </div>
               </div>
 
@@ -566,7 +610,13 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                       <label className="block text-xs text-slate-400 mb-1">Fee Category</label>
                       <select
                         value={feeCategoryId}
-                        onChange={(e) => setFeeCategoryId(e.target.value)}
+                        onChange={(e) => {
+                          if (e.target.value === '__new_category__') {
+                            setIsQuickAddCategoryOpen(true);
+                          } else {
+                            setFeeCategoryId(e.target.value);
+                          }
+                        }}
                         className="w-full px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white text-sm"
                       >
                         <option value="cat_fees">Bank & Transfer Fees</option>
@@ -575,6 +625,7 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                             {c.name}
                           </option>
                         ))}
+                        <option value="__new_category__">+ Add new category...</option>
                       </select>
                     </div>
                   </div>
@@ -586,9 +637,19 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
           {/* Category Selector (for income / expense) */}
           {type !== 'transfer' && (
             <div className="space-y-1.5">
-              <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                Category
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                  Category
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddCategoryOpen(true)}
+                  className="text-[11px] font-bold text-blue-400 hover:text-blue-300 flex items-center space-x-1 transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Category</span>
+                </button>
+              </div>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 max-h-36 overflow-y-auto p-1">
                 {filteredCategories.map((cat) => (
                   <button
@@ -607,6 +668,14 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
                     <span className="text-xs truncate w-full">{cat.name}</span>
                   </button>
                 ))}
+                <button
+                  type="button"
+                  onClick={() => setIsQuickAddCategoryOpen(true)}
+                  className="p-2.5 rounded-xl border border-dashed border-slate-700 hover:border-blue-500/60 bg-slate-900/30 hover:bg-blue-500/10 text-slate-400 hover:text-blue-300 transition flex flex-col items-center justify-center space-y-1 text-center"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span className="text-xs font-semibold">+ New</span>
+                </button>
               </div>
             </div>
           )}
@@ -769,6 +838,36 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         baseCurrency={baseCurrency}
         settings={settings}
         onProposalGenerated={handleProposalFromScanner}
+      />
+
+      {/* Inline Quick Add Category Modal */}
+      <QuickAddCategoryModal
+        isOpen={isQuickAddCategoryOpen}
+        onClose={() => setIsQuickAddCategoryOpen(false)}
+        initialType={type === 'income' ? 'income' : 'expense'}
+        onCreated={(newCat) => {
+          setCategoryId(newCat.id);
+        }}
+      />
+
+      {/* Inline Quick Add Account Modal */}
+      <QuickAddAccountModal
+        isOpen={isQuickAddAccountOpen}
+        onClose={() => setIsQuickAddAccountOpen(false)}
+        baseCurrency={baseCurrency}
+        onCreated={(newAcc) => {
+          setAccountId(newAcc.id);
+        }}
+      />
+
+      {/* Inline Quick Add Destination Account Modal */}
+      <QuickAddAccountModal
+        isOpen={isQuickAddToAccountOpen}
+        onClose={() => setIsQuickAddToAccountOpen(false)}
+        baseCurrency={baseCurrency}
+        onCreated={(newAcc) => {
+          setToAccountId(newAcc.id);
+        }}
       />
     </div>
   );

@@ -12,6 +12,8 @@ import {
 } from 'lucide-react';
 import type { ActionProposal, Account, Category, CurrencyCode } from '../../types';
 import { executeConfirmedProposal } from '../../services/ai';
+import { QuickAddCategoryModal } from '../shared/QuickAddCategoryModal';
+import { QuickAddAccountModal } from '../shared/QuickAddAccountModal';
 
 interface ActionProposalCardProps {
   proposal: ActionProposal;
@@ -31,6 +33,11 @@ export const ActionProposalCard: React.FC<ActionProposalCardProps> = ({
   const [isExecuting, setIsExecuting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [currentTxType, setCurrentTxType] = useState(proposal.data.type || 'expense');
+  const [, setCardVersion] = useState(0);
+
+  // Quick Add states
+  const [isQuickAddCategoryOpen, setIsQuickAddCategoryOpen] = useState(false);
+  const [isQuickAddAccountOpen, setIsQuickAddAccountOpen] = useState(false);
 
   const handleToggleDebtDirection = () => {
     const newType = currentTxType === 'debt' ? 'receivable' : 'debt';
@@ -206,13 +213,65 @@ export const ActionProposalCard: React.FC<ActionProposalCardProps> = ({
               {proposal.data.amount?.toLocaleString()} {proposal.data.currency}
             </span>
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center gap-2">
             <span className="text-slate-400">Account:</span>
-            <span className="text-slate-200">{proposal.data.accountName || 'Cash / Default'}</span>
+            {isPending ? (
+              <select
+                value={proposal.data.accountId || ''}
+                onChange={(e) => {
+                  if (e.target.value === '__new_account__') {
+                    setIsQuickAddAccountOpen(true);
+                  } else {
+                    const acc = accounts.find((a) => a.id === e.target.value);
+                    if (acc) {
+                      proposal.data.accountId = acc.id;
+                      proposal.data.accountName = acc.name;
+                      setCardVersion((v) => v + 1);
+                    }
+                  }
+                }}
+                className="bg-slate-800 text-slate-200 text-xs px-2 py-0.5 rounded border border-slate-700 max-w-[170px] truncate focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                {accounts.map((a) => (
+                  <option key={a.id} value={a.id}>
+                    {a.name} ({a.currency})
+                  </option>
+                ))}
+                <option value="__new_account__">+ Add new account...</option>
+              </select>
+            ) : (
+              <span className="text-slate-200">{proposal.data.accountName || 'Cash / Default'}</span>
+            )}
           </div>
-          <div className="flex justify-between">
+          <div className="flex justify-between items-center gap-2">
             <span className="text-slate-400">Category:</span>
-            <span className="text-slate-200">{proposal.data.categoryName || 'General'}</span>
+            {isPending ? (
+              <select
+                value={proposal.data.categoryId || ''}
+                onChange={(e) => {
+                  if (e.target.value === '__new_category__') {
+                    setIsQuickAddCategoryOpen(true);
+                  } else {
+                    const cat = categories.find((c) => c.id === e.target.value);
+                    if (cat) {
+                      proposal.data.categoryId = cat.id;
+                      proposal.data.categoryName = cat.name;
+                      setCardVersion((v) => v + 1);
+                    }
+                  }
+                }}
+                className="bg-slate-800 text-slate-200 text-xs px-2 py-0.5 rounded border border-slate-700 max-w-[170px] truncate focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+                <option value="__new_category__">+ Add new category...</option>
+              </select>
+            ) : (
+              <span className="text-slate-200">{proposal.data.categoryName || 'General'}</span>
+            )}
           </div>
           <div className="flex justify-between">
             <span className="text-slate-400">Date:</span>
@@ -285,6 +344,30 @@ export const ActionProposalCard: React.FC<ActionProposalCardProps> = ({
           </button>
         </div>
       )}
+
+      {/* Inline Quick Add Category Modal */}
+      <QuickAddCategoryModal
+        isOpen={isQuickAddCategoryOpen}
+        onClose={() => setIsQuickAddCategoryOpen(false)}
+        initialType={proposal.data.type === 'income' ? 'income' : 'expense'}
+        onCreated={(newCat) => {
+          proposal.data.categoryId = newCat.id;
+          proposal.data.categoryName = newCat.name;
+          setCardVersion((v) => v + 1);
+        }}
+      />
+
+      {/* Inline Quick Add Account Modal */}
+      <QuickAddAccountModal
+        isOpen={isQuickAddAccountOpen}
+        onClose={() => setIsQuickAddAccountOpen(false)}
+        baseCurrency={baseCurrency}
+        onCreated={(newAcc) => {
+          proposal.data.accountId = newAcc.id;
+          proposal.data.accountName = newAcc.name;
+          setCardVersion((v) => v + 1);
+        }}
+      />
     </div>
   );
 };

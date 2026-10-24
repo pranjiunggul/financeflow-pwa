@@ -13,6 +13,7 @@ import {
   TrendingDown,
   TrendingUp,
   Cpu,
+  Plus,
 } from 'lucide-react';
 import { scanReceiptImage, scanReceiptWithAI, createProposalFromOCR } from '../../services/ocr';
 import type {
@@ -24,6 +25,8 @@ import type {
   AppSettings,
   TransactionType,
 } from '../../types';
+import { QuickAddCategoryModal } from '../shared/QuickAddCategoryModal';
+import { QuickAddAccountModal } from '../shared/QuickAddAccountModal';
 
 interface ReceiptScannerModalProps {
   isOpen: boolean;
@@ -70,6 +73,11 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   const [editDate, setEditDate] = useState<string>('');
   const [editDescription, setEditDescription] = useState<string>('');
   const [editFee, setEditFee] = useState<number>(0);
+
+  // Quick Add modal states
+  const [isQuickAddCategoryOpen, setIsQuickAddCategoryOpen] = useState(false);
+  const [isQuickAddAccountOpen, setIsQuickAddAccountOpen] = useState(false);
+  const [isQuickAddToAccountOpen, setIsQuickAddToAccountOpen] = useState(false);
 
   // AI Vision is preconfigured and always ready out of the box
   useEffect(() => {
@@ -505,12 +513,28 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
 
                 {/* Source Account (Dari Rekening) */}
                 <div className="space-y-1">
-                  <label className="text-slate-400 font-semibold block text-[11px]">
-                    {editType === 'income' ? 'Rekening Tujuan (Masuk ke)' : 'Rekening Sumber (Dari)'}
-                  </label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-slate-400 font-semibold block text-[11px]">
+                      {editType === 'income' ? 'Rekening Tujuan (Masuk ke)' : 'Rekening Sumber (Dari)'}
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickAddAccountOpen(true)}
+                      className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center space-x-0.5"
+                    >
+                      <Plus className="w-3 h-3" />
+                      <span>Tambah</span>
+                    </button>
+                  </div>
                   <select
                     value={editAccountId}
-                    onChange={(e) => setEditAccountId(e.target.value)}
+                    onChange={(e) => {
+                      if (e.target.value === '__new_account__') {
+                        setIsQuickAddAccountOpen(true);
+                      } else {
+                        setEditAccountId(e.target.value);
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   >
                     {accounts.map((acc) => (
@@ -518,16 +542,33 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
                         {acc.name} ({acc.currency})
                       </option>
                     ))}
+                    <option value="__new_account__">+ Tambah Rekening Baru...</option>
                   </select>
                 </div>
 
                 {/* If Transfer: Destination Account */}
                 {editType === 'transfer' ? (
                   <div className="space-y-1">
-                    <label className="text-slate-400 font-semibold block text-[11px]">Ke Rekening (Tujuan)</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-slate-400 font-semibold block text-[11px]">Ke Rekening (Tujuan)</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickAddToAccountOpen(true)}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center space-x-0.5"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Tambah</span>
+                      </button>
+                    </div>
                     <select
                       value={editToAccountId}
-                      onChange={(e) => setEditToAccountId(e.target.value)}
+                      onChange={(e) => {
+                        if (e.target.value === '__new_account__') {
+                          setIsQuickAddToAccountOpen(true);
+                        } else {
+                          setEditToAccountId(e.target.value);
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       <option value="">Pilih Rekening Tujuan...</option>
@@ -538,15 +579,32 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
                             {acc.name} ({acc.currency})
                           </option>
                         ))}
+                      <option value="__new_account__">+ Tambah Rekening Baru...</option>
                     </select>
                   </div>
                 ) : (
                   /* Category */
                   <div className="space-y-1">
-                    <label className="text-slate-400 font-semibold block text-[11px]">Kategori</label>
+                    <div className="flex items-center justify-between">
+                      <label className="text-slate-400 font-semibold block text-[11px]">Kategori</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickAddCategoryOpen(true)}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center space-x-0.5"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Tambah</span>
+                      </button>
+                    </div>
                     <select
                       value={editCategoryId}
-                      onChange={(e) => setEditCategoryId(e.target.value)}
+                      onChange={(e) => {
+                        if (e.target.value === '__new_category__') {
+                          setIsQuickAddCategoryOpen(true);
+                        } else {
+                          setEditCategoryId(e.target.value);
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     >
                       {categories
@@ -560,6 +618,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
                             {cat.name}
                           </option>
                         ))}
+                      <option value="__new_category__">+ Tambah Kategori Baru...</option>
                     </select>
                   </div>
                 )}
@@ -639,6 +698,36 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Inline Quick Add Category Modal */}
+      <QuickAddCategoryModal
+        isOpen={isQuickAddCategoryOpen}
+        onClose={() => setIsQuickAddCategoryOpen(false)}
+        initialType={editType === 'income' ? 'income' : 'expense'}
+        onCreated={(newCat) => {
+          setEditCategoryId(newCat.id);
+        }}
+      />
+
+      {/* Inline Quick Add Source Account Modal */}
+      <QuickAddAccountModal
+        isOpen={isQuickAddAccountOpen}
+        onClose={() => setIsQuickAddAccountOpen(false)}
+        baseCurrency={baseCurrency}
+        onCreated={(newAcc) => {
+          setEditAccountId(newAcc.id);
+        }}
+      />
+
+      {/* Inline Quick Add Destination Account Modal */}
+      <QuickAddAccountModal
+        isOpen={isQuickAddToAccountOpen}
+        onClose={() => setIsQuickAddToAccountOpen(false)}
+        baseCurrency={baseCurrency}
+        onCreated={(newAcc) => {
+          setEditToAccountId(newAcc.id);
+        }}
+      />
     </div>
   );
 };

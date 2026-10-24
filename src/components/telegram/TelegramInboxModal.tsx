@@ -14,6 +14,7 @@ import {
   Calendar,
   Wallet,
   Tag,
+  Plus,
 } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../../db/database';
@@ -23,6 +24,8 @@ import {
   rejectTelegramItem,
   confirmAllTelegramItems,
 } from '../../services/telegram';
+import { QuickAddCategoryModal } from '../shared/QuickAddCategoryModal';
+import { QuickAddAccountModal } from '../shared/QuickAddAccountModal';
 import type { TelegramInboxItem, Account, Category, CurrencyCode } from '../../types';
 
 interface TelegramInboxModalProps {
@@ -43,10 +46,58 @@ export const TelegramInboxModal: React.FC<TelegramInboxModalProps> = ({
   const [activeTab, setActiveTab] = useState<'inbox' | 'setup'>('inbox');
   const [parsingMap, setParsingMap] = useState<Record<string, boolean>>({});
   const [isProcessingAll, setIsProcessingAll] = useState(false);
+  const [quickAddType, setQuickAddType] = useState<'category' | 'account' | null>(null);
+  const [targetItemId, setTargetItemId] = useState<string | null>(null);
 
   // Live query for telegram inbox items
   const items = useLiveQuery(() => db.telegram_inbox.toArray(), []) || [];
   const pendingItems = items.filter((i) => i.status === 'pending');
+
+  const handleUpdateCategory = async (itemId: string, newCategoryId: string) => {
+    if (newCategoryId === '__new_category__') {
+      setTargetItemId(itemId);
+      setQuickAddType('category');
+      return;
+    }
+    const item = pendingItems.find((i) => i.id === itemId);
+    if (!item || !item.processedProposal) return;
+    const cat = categories.find((c) => c.id === newCategoryId);
+    if (!cat) return;
+    const updatedProposal = {
+      ...item.processedProposal,
+      data: {
+        ...item.processedProposal.data,
+        categoryId: cat.id,
+        categoryName: cat.name,
+      },
+    };
+    await db.telegram_inbox.update(itemId, {
+      processedProposal: updatedProposal,
+    });
+  };
+
+  const handleUpdateAccount = async (itemId: string, newAccountId: string) => {
+    if (newAccountId === '__new_account__') {
+      setTargetItemId(itemId);
+      setQuickAddType('account');
+      return;
+    }
+    const item = pendingItems.find((i) => i.id === itemId);
+    if (!item || !item.processedProposal) return;
+    const acc = accounts.find((a) => a.id === newAccountId);
+    if (!acc) return;
+    const updatedProposal = {
+      ...item.processedProposal,
+      data: {
+        ...item.processedProposal.data,
+        accountId: acc.id,
+        accountName: acc.name,
+      },
+    };
+    await db.telegram_inbox.update(itemId, {
+      processedProposal: updatedProposal,
+    });
+  };
 
   // Automatically parse any new pending items that lack a proposal
   useEffect(() => {
@@ -274,33 +325,80 @@ export const TelegramInboxModal: React.FC<TelegramInboxModalProps> = ({
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs">
-                          <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                            <span className="text-[10px] text-slate-500 uppercase font-bold flex items-center space-x-1">
-                              <Tag className="w-3 h-3 text-slate-400" />
-                              <span>Category</span>
-                            </span>
-                            <p className="font-semibold text-slate-200 truncate mt-0.5">
-                              {prop.data.categoryName || 'General'}
-                            </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+                          {/* Category Selector with Quick Add */}
+                          <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-slate-500 uppercase font-bold flex items-center space-x-1">
+                                <Tag className="w-3 h-3 text-slate-400" />
+                                <span>Category</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTargetItemId(item.id);
+                                  setQuickAddType('category');
+                                }}
+                                className="text-[10px] text-sky-400 hover:text-sky-300 font-bold flex items-center space-x-0.5"
+                              >
+                                <Plus className="w-2.5 h-2.5" />
+                                <span>Add</span>
+                              </button>
+                            </div>
+                            <select
+                              value={prop.data.categoryId || ''}
+                              onChange={(e) => handleUpdateCategory(item.id, e.target.value)}
+                              className="bg-slate-900 text-slate-200 text-xs px-2 py-1 rounded border border-slate-700/80 mt-1 w-full truncate focus:outline-none focus:ring-1 focus:ring-sky-500"
+                            >
+                              {categories.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.name}
+                                </option>
+                              ))}
+                              <option value="__new_category__">+ Add new category...</option>
+                            </select>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800">
-                            <span className="text-[10px] text-slate-500 uppercase font-bold flex items-center space-x-1">
-                              <Wallet className="w-3 h-3 text-slate-400" />
-                              <span>Account</span>
-                            </span>
-                            <p className="font-semibold text-slate-200 truncate mt-0.5">
-                              {prop.data.accountName || 'Cash'}
-                            </p>
+                          {/* Account Selector with Quick Add */}
+                          <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] text-slate-500 uppercase font-bold flex items-center space-x-1">
+                                <Wallet className="w-3 h-3 text-slate-400" />
+                                <span>Account</span>
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setTargetItemId(item.id);
+                                  setQuickAddType('account');
+                                }}
+                                className="text-[10px] text-sky-400 hover:text-sky-300 font-bold flex items-center space-x-0.5"
+                              >
+                                <Plus className="w-2.5 h-2.5" />
+                                <span>Add</span>
+                              </button>
+                            </div>
+                            <select
+                              value={prop.data.accountId || ''}
+                              onChange={(e) => handleUpdateAccount(item.id, e.target.value)}
+                              className="bg-slate-900 text-slate-200 text-xs px-2 py-1 rounded border border-slate-700/80 mt-1 w-full truncate focus:outline-none focus:ring-1 focus:ring-sky-500"
+                            >
+                              {accounts.map((a) => (
+                                <option key={a.id} value={a.id}>
+                                  {a.name} ({a.currency})
+                                </option>
+                              ))}
+                              <option value="__new_account__">+ Add new account...</option>
+                            </select>
                           </div>
 
-                          <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800 col-span-2 sm:col-span-1">
+                          {/* Date */}
+                          <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800 flex flex-col justify-between">
                             <span className="text-[10px] text-slate-500 uppercase font-bold flex items-center space-x-1">
                               <Calendar className="w-3 h-3 text-slate-400" />
                               <span>Date</span>
                             </span>
-                            <p className="font-semibold text-slate-200 truncate mt-0.5">
+                            <p className="font-semibold text-slate-200 truncate mt-1">
                               {prop.data.date || new Date().toISOString().split('T')[0]}
                             </p>
                           </div>
@@ -345,6 +443,65 @@ export const TelegramInboxModal: React.FC<TelegramInboxModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Inline Quick Add Category Modal */}
+      <QuickAddCategoryModal
+        isOpen={quickAddType === 'category'}
+        onClose={() => {
+          setQuickAddType(null);
+          setTargetItemId(null);
+        }}
+        onCreated={async (newCat: Category) => {
+          if (targetItemId) {
+            const itm = pendingItems.find((i) => i.id === targetItemId);
+            if (itm && itm.processedProposal) {
+              const updatedProposal = {
+                ...itm.processedProposal,
+                data: {
+                  ...itm.processedProposal.data,
+                  categoryId: newCat.id,
+                  categoryName: newCat.name,
+                },
+              };
+              await db.telegram_inbox.update(targetItemId, {
+                processedProposal: updatedProposal,
+              });
+            }
+          }
+          setQuickAddType(null);
+          setTargetItemId(null);
+        }}
+      />
+
+      {/* Inline Quick Add Account Modal */}
+      <QuickAddAccountModal
+        isOpen={quickAddType === 'account'}
+        baseCurrency={baseCurrency}
+        onClose={() => {
+          setQuickAddType(null);
+          setTargetItemId(null);
+        }}
+        onCreated={async (newAcc: Account) => {
+          if (targetItemId) {
+            const itm = pendingItems.find((i) => i.id === targetItemId);
+            if (itm && itm.processedProposal) {
+              const updatedProposal = {
+                ...itm.processedProposal,
+                data: {
+                  ...itm.processedProposal.data,
+                  accountId: newAcc.id,
+                  accountName: newAcc.name,
+                },
+              };
+              await db.telegram_inbox.update(targetItemId, {
+                processedProposal: updatedProposal,
+              });
+            }
+          }
+          setQuickAddType(null);
+          setTargetItemId(null);
+        }}
+      />
     </div>
   );
 };

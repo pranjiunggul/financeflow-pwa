@@ -7,6 +7,7 @@ import {
   Printer,
   Upload,
   CheckCircle,
+  Plus,
 } from 'lucide-react';
 import type {
   Transaction,
@@ -23,6 +24,8 @@ import {
 } from '../../services/export';
 import { createTransaction } from '../../services/ledger';
 import { formatCurrency } from '../../services/fx';
+import { QuickAddCategoryModal } from '../shared/QuickAddCategoryModal';
+import { QuickAddAccountModal } from '../shared/QuickAddAccountModal';
 
 interface ExportReportModalProps {
   isOpen: boolean;
@@ -54,6 +57,10 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
   const [targetCategoryId, setTargetCategoryId] = useState<string>('');
   const [importStatus, setImportStatus] = useState<string>('');
   const [isImporting, setIsImporting] = useState<boolean>(false);
+
+  // Quick Add state
+  const [isQuickAddCategoryOpen, setIsQuickAddCategoryOpen] = useState<boolean>(false);
+  const [isQuickAddAccountOpen, setIsQuickAddAccountOpen] = useState<boolean>(false);
 
   const activeAccounts = accounts.filter((a) => !a.isDeleted);
   const activeCategories = categories.filter((c) => !c.isDeleted);
@@ -365,10 +372,26 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
 
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Target Account</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs text-slate-400">Target Account</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickAddAccountOpen(true)}
+                        className="text-[10px] text-indigo-400 hover:text-indigo-300 font-bold flex items-center space-x-0.5"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add</span>
+                      </button>
+                    </div>
                     <select
                       value={targetAccountId}
-                      onChange={(e) => setTargetAccountId(e.target.value)}
+                      onChange={(e) => {
+                        if (e.target.value === '__new_account__') {
+                          setIsQuickAddAccountOpen(true);
+                        } else {
+                          setTargetAccountId(e.target.value);
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs font-semibold"
                     >
                       {activeAccounts.map((a) => (
@@ -376,13 +399,30 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                           {a.name}
                         </option>
                       ))}
+                      <option value="__new_account__">+ Add new account...</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block text-xs text-slate-400 mb-1">Default Category</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs text-slate-400">Default Category</label>
+                      <button
+                        type="button"
+                        onClick={() => setIsQuickAddCategoryOpen(true)}
+                        className="text-[10px] text-blue-400 hover:text-blue-300 font-bold flex items-center space-x-0.5"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add</span>
+                      </button>
+                    </div>
                     <select
                       value={targetCategoryId}
-                      onChange={(e) => setTargetCategoryId(e.target.value)}
+                      onChange={(e) => {
+                        if (e.target.value === '__new_category__') {
+                          setIsQuickAddCategoryOpen(true);
+                        } else {
+                          setTargetCategoryId(e.target.value);
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs font-semibold"
                     >
                       {activeCategories.map((c) => (
@@ -390,6 +430,7 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
                           {c.name}
                         </option>
                       ))}
+                      <option value="__new_category__">+ Add new category...</option>
                     </select>
                   </div>
                 </div>
@@ -436,6 +477,26 @@ export const ExportReportModal: React.FC<ExportReportModalProps> = ({
           )}
         </div>
       </div>
+
+      {/* Inline Quick Add Category Modal */}
+      <QuickAddCategoryModal
+        isOpen={isQuickAddCategoryOpen}
+        onClose={() => setIsQuickAddCategoryOpen(false)}
+        initialType="expense"
+        onCreated={(newCat) => {
+          setTargetCategoryId(newCat.id);
+        }}
+      />
+
+      {/* Inline Quick Add Account Modal */}
+      <QuickAddAccountModal
+        isOpen={isQuickAddAccountOpen}
+        onClose={() => setIsQuickAddAccountOpen(false)}
+        baseCurrency={baseCurrency}
+        onCreated={(newAcc) => {
+          setTargetAccountId(newAcc.id);
+        }}
+      />
     </div>
   );
 };
