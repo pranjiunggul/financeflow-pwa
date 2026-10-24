@@ -34,6 +34,29 @@ export default defineConfig({
             type: 'image/png',
             purpose: 'any maskable'
           }
+        ],
+        shortcuts: [
+          {
+            name: 'Fast Glance',
+            short_name: 'Glance',
+            description: 'Instant overview of balances and today spend',
+            url: '/?mode=glance',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Add Expense',
+            short_name: 'Add',
+            description: 'Quickly record a new transaction',
+            url: '/?mode=add',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+          },
+          {
+            name: 'Scan Receipt',
+            short_name: 'Scan',
+            description: 'Scan receipt with OCR',
+            url: '/?mode=scan',
+            icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }]
+          }
         ]
       },
       workbox: {

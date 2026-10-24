@@ -203,6 +203,9 @@ export interface AppSettings {
   aiApiKey?: string;
   ollamaEndpoint?: string;    // Default 'http://localhost:11434'
 
+  // Feature 9: Privacy-Preserving Opt-In Crash Reporting
+  crashReportingEnabled?: boolean;
+
   // Telegram Integration
   telegramEnabled?: boolean;
   telegramBotTokenEnc?: EncryptedPayload;
@@ -262,6 +265,9 @@ export interface SyncPayloadData {
     ai_providers?: AIProviderConfig[];
     ai_keys?: AIKeyRecord[];
     ai_priorities?: AIPriorityItem[];
+    subscription_patterns?: SubscriptionPattern[];
+    ai_chat_sessions?: AIChatSession[];
+    receipt_attachments?: ReceiptAttachment[];
   };
 }
 
@@ -416,6 +422,11 @@ export interface AIProviderConfig {
   availableModels: string[];     // Dynamically fetched model IDs
   selectedModel: string;         // Default chosen model ID
   isEnabled: boolean;
+  // Feature 4: Estimated Monthly Spending Cap
+  monthlySpendCap?: number;         // In user base currency or USD
+  monthlySpendCurrency?: CurrencyCode;
+  estimatedMonthSpend?: number;     // Running self-computed estimate from token counts
+  lastSpendResetMonth?: string;     // YYYY-MM
   createdAt: number;
   updatedAt: number;
   version: number;
@@ -473,4 +484,47 @@ export interface AIPersistentAlert {
   timestamp: number;
   dismissed: boolean;
 }
+
+// 10-Feature Batch Enhancement Types
+export interface SubscriptionPattern {
+  id: string;
+  patternKey: string;             // normalizedMerchant_approxAmount
+  merchantName: string;
+  suggestedCategoryId?: string;
+  suggestedAccountId?: string;
+  amount: number;
+  currency: CurrencyCode;
+  frequency: RecurringFrequency;
+  intervalDays: number;
+  dayOfMonth?: number;
+  dayOfWeek?: number;
+  dismissed: boolean;
+  sampleTransactionIds: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface AIChatSession {
+  id: string;                     // 'session_xxx'
+  title: string;
+  createdAt: number;
+  updatedAt: number;
+  messageCount: number;
+  encryptedPayload: EncryptedPayload; // AES-GCM-256 encrypted ChatMessage[]
+  isDeleted: boolean;
+}
+
+export interface ReceiptAttachment {
+  id: string;                     // 'rcpt_xxx'
+  transactionId: string;
+  mimeType: string;               // e.g. 'image/jpeg'
+  sizeBytes: number;
+  width?: number;
+  height?: number;
+  dataBase64?: string;            // Data URL or base64
+  encryptedPayload?: EncryptedPayload;
+  createdAt: number;
+  isDeleted: boolean;
+}
+
 

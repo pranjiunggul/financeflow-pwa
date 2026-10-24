@@ -639,6 +639,68 @@ export const AIProviderManager: React.FC<AIProviderManagerProps> = ({
                       ))}
                     </select>
                   </div>
+
+                  {/* Feature 4: Estimated Monthly Spend & Spending Cap */}
+                  <div className="pt-2 border-t border-slate-800/80 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] uppercase font-bold text-slate-400">
+                        Estimated spend this month:
+                      </span>
+                      <span className="text-xs font-semibold text-white font-mono">
+                        ~${(prov.estimatedMonthSpend || 0).toFixed(2)}
+                        {prov.monthlySpendCap ? ` / ~$${prov.monthlySpendCap.toFixed(2)}` : ''}
+                      </span>
+                    </div>
+
+                    {/* Progress bar if cap is configured */}
+                    {prov.monthlySpendCap && prov.monthlySpendCap > 0 ? (
+                      <div className="w-full bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <div
+                          className={`h-full transition-all ${
+                            (prov.estimatedMonthSpend || 0) >= prov.monthlySpendCap
+                              ? 'bg-rose-500'
+                              : (prov.estimatedMonthSpend || 0) >= prov.monthlySpendCap * 0.8
+                              ? 'bg-amber-400'
+                              : 'bg-indigo-500'
+                          }`}
+                          style={{
+                            width: `${Math.min(
+                              100,
+                              Math.round(((prov.estimatedMonthSpend || 0) / prov.monthlySpendCap) * 100)
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    ) : null}
+
+                    {/* Warning / Cutoff Notice */}
+                    {prov.monthlySpendCap && (prov.estimatedMonthSpend || 0) >= prov.monthlySpendCap ? (
+                      <div className="text-[10px] text-rose-400 font-medium">
+                        ⚠️ Estimated monthly spending cap reached. Provider automatically bypassed in priority rollover.
+                      </div>
+                    ) : prov.monthlySpendCap &&
+                      (prov.estimatedMonthSpend || 0) >= prov.monthlySpendCap * 0.8 ? (
+                      <div className="text-[10px] text-amber-400 font-medium">
+                        ⚠️ Approaching estimated monthly spending cap (80%+).
+                      </div>
+                    ) : null}
+
+                    <div className="flex items-center gap-2 pt-1">
+                      <span className="text-[10px] text-slate-400">Monthly cap ($):</span>
+                      <input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        placeholder="No cap"
+                        value={prov.monthlySpendCap || ''}
+                        onChange={(e) => {
+                          const val = e.target.value ? parseFloat(e.target.value) : undefined;
+                          db.ai_providers.update(prov.id, { monthlySpendCap: val });
+                        }}
+                        className="w-24 px-2 py-1 bg-slate-900 border border-slate-700 rounded-lg text-white text-[11px] font-mono focus:outline-none"
+                      />
+                    </div>
+                  </div>
                 </div>
               );
             })}

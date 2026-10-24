@@ -10,6 +10,8 @@ import {
   ChevronRight,
   FileSpreadsheet,
   AlertTriangle,
+  Sparkles,
+  CreditCard,
 } from 'lucide-react';
 import type {
   Account,
@@ -26,6 +28,10 @@ import { CashFlowBarChart } from './CashFlowBarChart';
 import { CategoryDonutChart } from './CategoryDonutChart';
 import { BudgetPerformanceWidget } from './BudgetPerformanceWidget';
 import { ProactiveAlertBanner } from '../advisor/ProactiveAlertBanner';
+import { SubscriptionSuggestionBanner } from '../recurring/SubscriptionSuggestionBanner';
+import { SpendingHeatmap } from '../analytics/SpendingHeatmap';
+import { SubscriptionsOverviewModal } from '../recurring/SubscriptionsOverviewModal';
+import { AnnualWrappedModal } from '../analytics/AnnualWrappedModal';
 import { useTranslation } from '../../i18n';
 
 interface DashboardViewProps {
@@ -53,6 +59,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const activeAccounts = accounts.filter((a) => !a.isDeleted);
   const activeTransactions = transactions.filter((t) => !t.isDeleted);
   const aiAlerts = useLiveQuery(() => db.ai_failure_alerts.filter((a) => !a.dismissed).toArray()) || [];
+
+  const [isWrappedOpen, setIsWrappedOpen] = React.useState(false);
+  const [isSubscriptionsOpen, setIsSubscriptionsOpen] = React.useState(false);
 
   // 1. Calculate Total Net Worth normalized in Base Currency
   const totalNetWorth = activeAccounts
@@ -101,6 +110,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
       )}
+
+      {/* Feature 1: Automatic Recurring Subscription Suggestion Banner */}
+      <SubscriptionSuggestionBanner
+        baseCurrency={baseCurrency}
+        onOpenOverview={() => setIsSubscriptionsOpen(true)}
+      />
 
       {/* Proactive Advisor Alerts Banner */}
       <ProactiveAlertBanner onNavigateTab={onSelectTab} />
@@ -153,6 +168,22 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             >
               <FileSpreadsheet className="w-4 h-4 text-blue-400" />
               <span>{t('dashboard.exportReports')}</span>
+            </button>
+            <button
+              onClick={() => setIsSubscriptionsOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-300 hover:text-white rounded-2xl text-xs sm:text-sm font-bold transition transform active:scale-95"
+              title="Subscriptions & Recurring Spend Overview"
+            >
+              <CreditCard className="w-4 h-4 text-indigo-400" />
+              <span>Recurring</span>
+            </button>
+            <button
+              onClick={() => setIsWrappedOpen(true)}
+              className="flex items-center space-x-2 px-4 py-2.5 bg-gradient-to-r from-pink-500/20 to-purple-500/20 hover:from-pink-500/30 hover:to-purple-500/30 border border-pink-500/30 text-pink-300 hover:text-white rounded-2xl text-xs sm:text-sm font-bold transition transform active:scale-95 shadow-lg shadow-purple-500/10"
+              title="Annual Wrapped Summary"
+            >
+              <Sparkles className="w-4 h-4 text-pink-400 animate-pulse" />
+              <span>Wrapped</span>
             </button>
           </div>
         </div>
@@ -241,6 +272,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         baseCurrency={baseCurrency}
         onOpenCategoriesTab={() => onSelectTab('categories')}
       />
+
+      {/* Feature 3: Daily Spending Heatmap */}
+      <SpendingHeatmap baseCurrency={baseCurrency} />
 
       {/* 4. Accounts and Recent Ledger Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -390,6 +424,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* Feature 1: Subscriptions & Recurring Overview Modal */}
+      <SubscriptionsOverviewModal
+        isOpen={isSubscriptionsOpen}
+        onClose={() => setIsSubscriptionsOpen(false)}
+        baseCurrency={baseCurrency}
+        onOpenCreateRule={() => {
+          setIsSubscriptionsOpen(false);
+          onOpenNewTransaction('expense');
+        }}
+      />
+
+      {/* Feature 2: Annual Wrapped Financial Summary Modal */}
+      <AnnualWrappedModal
+        isOpen={isWrappedOpen}
+        onClose={() => setIsWrappedOpen(false)}
+        baseCurrency={baseCurrency}
+      />
     </div>
   );
 };

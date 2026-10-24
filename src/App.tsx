@@ -18,6 +18,7 @@ import { BottomNav, type TabKey } from './components/layout/BottomNav';
 
 // Views
 import { DashboardView } from './components/dashboard/DashboardView';
+import { FastGlanceView } from './components/dashboard/FastGlanceView';
 import { TransactionListView } from './components/transactions/TransactionListView';
 import { AccountsView } from './components/accounts/AccountsView';
 import { CategoriesView } from './components/categories/CategoriesView';
@@ -48,6 +49,7 @@ export const App: React.FC = () => {
   const [isInitialized, setIsInitialized] = useState(false);
   const [isAppLocked, setIsAppLocked] = useState(false);
   const [sessionPin, setSessionPin] = useState<string | undefined>();
+  const [isGlanceMode, setIsGlanceMode] = useState<boolean>(() => typeof window !== 'undefined' && window.location.search.includes('mode=glance'));
 
   // Modals state
   const [isTxModalOpen, setIsTxModalOpen] = useState(false);
@@ -167,6 +169,20 @@ export const App: React.FC = () => {
           Loading FinanceFlow Ledger...
         </p>
       </div>
+    );
+  }
+
+  if (isGlanceMode) {
+    return (
+      <FastGlanceView
+        baseCurrency={baseCurrency}
+        onOpenFullApp={() => {
+          setIsGlanceMode(false);
+          if (typeof window !== 'undefined' && window.history.replaceState) {
+            window.history.replaceState({}, '', '/');
+          }
+        }}
+      />
     );
   }
 

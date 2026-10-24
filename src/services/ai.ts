@@ -25,6 +25,10 @@ import {
   revealApiKey,
   getCachedHealth,
 } from './aiHealth';
+import {
+  isProviderCapExceeded,
+  recordEstimatedProviderUsage,
+} from './aiPricing';
 import type {
   Account,
   Category,
@@ -1188,6 +1192,17 @@ export async function sendUnifiedChatMessage(
   for (const candidate of candidates) {
     const { provider, key, model, targetId, legacyApiKey } = candidate;
 
+    // Feature 4: Check if provider has exceeded its self-computed estimated monthly spending cap
+    const capCheck = isProviderCapExceeded(provider);
+    if (capCheck.isExceeded) {
+      failoverChain.push({
+        provider: provider.name,
+        model,
+        reason: capCheck.reason || 'Estimated monthly spending cap reached',
+      });
+      continue;
+    }
+
     let plainKey: string | undefined = legacyApiKey;
     if (!plainKey && provider.protocol !== 'ollama' && key) {
       if (!context.masterPin) {
@@ -1238,6 +1253,13 @@ export async function sendUnifiedChatMessage(
         keyLabel: key?.label,
         result: { status: 'healthy' },
       });
+
+      // Feature 4: Record self-computed estimated usage for spending cap tracking
+      if (provider.id) {
+        const approxPromptTokens = Math.round((userText.length + 400) / 4);
+        const approxCompletionTokens = Math.round((response.replyText.length) / 4);
+        recordEstimatedProviderUsage(provider.id, model, approxPromptTokens, approxCompletionTokens).catch(console.warn);
+      }
 
       return {
         replyText: response.replyText,

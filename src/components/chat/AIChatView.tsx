@@ -8,6 +8,7 @@ import {
   RefreshCw,
   TrendingUp,
   Sliders,
+  History,
 } from 'lucide-react';
 import type {
   Account,
@@ -18,9 +19,11 @@ import type {
   AppSettings,
 } from '../../types';
 import { sendUnifiedChatMessage } from '../../services/ai';
+import { saveChatSession, loadChatSessionMessages } from '../../services/chatHistory';
 import { ActionProposalCard } from './ActionProposalCard';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
 import { BulkHistoryImportModal } from '../transactions/BulkHistoryImportModal';
+import { ChatHistoryModal } from './ChatHistoryModal';
 
 interface AIChatViewProps {
   accounts: Account[];
@@ -63,6 +66,8 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   onOpenSettings,
   onNavigateTab,
 }) => {
+  const [sessionId, setSessionId] = useState<string>(() => 'sess_' + Date.now());
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_GREETING]);
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +75,26 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   const [isBulkHistoryModalOpen, setIsBulkHistoryModalOpen] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | Blob | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleSelectSession = async (id: string) => {
+    setIsLoading(true);
+    try {
+      const loaded = await loadChatSessionMessages(id, masterPin);
+      if (loaded.length > 0) {
+        setMessages(loaded);
+        setSessionId(id);
+      }
+    } catch (err) {
+      console.warn('Failed to load session:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewChat = () => {
+    setMessages([INITIAL_GREETING]);
+    setSessionId('sess_' + Date.now());
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -140,7 +165,12 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         failoverChain: response.failoverChain,
       };
 
-      setMessages((prev) => [...prev, assistantMessage]);
+      const updated = [...messages, userMessage, assistantMessage];
+      setMessages(updated);
+
+      // Feature 5: Encrypted Persistence
+      const title = text.slice(0, 35);
+      saveChatSession(sessionId, title, updated, masterPin).catch(console.warn);
     } catch (err: any) {
       setMessages((prev) => [
         ...prev,
@@ -204,6 +234,14 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
           >
             <Camera className="w-3.5 h-3.5 text-indigo-400" />
             <span className="hidden sm:inline">Scan Receipt</span>
+          </button>
+
+          <button
+            onClick={() => setIsHistoryModalOpen(true)}
+            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition"
+            title="Search Chat History"
+          >
+            <History className="w-4 h-4 text-indigo-400" />
           </button>
 
           <button
@@ -409,6 +447,15 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
           };
           setMessages((prev) => [...prev, successMsg]);
         }}
+      />
+
+      {/* Feature 5: Searchable Encrypted Chat History Modal */}
+      <ChatHistoryModal
+        isOpen={isHistoryModalOpen}
+        onClose={() => setIsHistoryModalOpen(false)}
+        masterPin={masterPin}
+        onSelectSession={handleSelectSession}
+        onNewChat={handleNewChat}
       />
     </div>
   );

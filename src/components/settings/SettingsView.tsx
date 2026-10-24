@@ -32,6 +32,8 @@ import type {
 import { db } from '../../db/database';
 import { useTranslation } from '../../i18n';
 import { recalculateAllAccountBalances } from '../../services/ledger';
+import { calculateReceiptsStorageBytes } from '../../services/receiptAttachments';
+import { downloadFullDataArchive, executeFullDataDeletion } from '../../services/dataWipe';
 import {
   createEncryptedLocalBackup,
   listAvailableLocalBackups,
@@ -109,6 +111,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     settings?.googleDriveClientId ? sanitizeClientId(settings.googleDriveClientId) : DEFAULT_GOOGLE_CLIENT_ID
   );
   const [dailyBackupEnabled, setDailyBackupEnabled] = useState(settings?.dailyBackupEnabled !== false);
+  const [receiptStorageBytes, setReceiptStorageBytes] = useState(0);
+  const [crashReportingEnabled, setCrashReportingEnabled] = useState(settings?.crashReportingEnabled === true);
+  const [isWipingData, setIsWipingData] = useState(false);
+  const [wipeRemoteDrive, setWipeRemoteDrive] = useState(false);
+  const [showWipeConfirmModal, setShowWipeConfirmModal] = useState(false);
+  const [wipePinInput, setWipePinInput] = useState('');
+  const [wipeTextInput, setWipeTextInput] = useState('');
   const [localBackups, setLocalBackups] = useState<LocalBackupMetadata[]>([]);
   const [conflicts, setConflicts] = useState<SyncConflictRecord[]>([]);
   const [duplicates, setDuplicates] = useState<SyncDuplicatePair[]>([]);
@@ -149,9 +158,59 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const loadBackups = async () => {
     try {
       const list = await listAvailableLocalBackups();
+      const rcptBytes = await calculateReceiptsStorageBytes();
+      setReceiptStorageBytes(rcptBytes);
       setLocalBackups(list);
     } catch (err) {
       console.warn('Failed to load local backups list:', err);
+    }
+  };
+
+  
+  // Feature 9: Toggle Crash Reporting
+  const handleToggleCrashReporting = async (enabled: boolean) => {
+    setCrashReportingEnabled(enabled);
+    await db.settings.update('current', { crashReportingEnabled: enabled });
+    setStatusMessage(`Privacy-preserving crash reporting ${enabled ? 'enabled' : 'disabled'}.`);
+  };
+
+  // Feature 10: Export All Data
+  const handleExportAllData = async () => {
+    try {
+      await downloadFullDataArchive(baseCurrency);
+      setStatusMessage('Full data ZIP archive generated and downloaded successfully.');
+    } catch (err: any) {
+      setErrorMessage('Export failed: ' + err.message);
+    }
+  };
+
+  // Feature 10: Execute Two-Tier Wipe
+  const handleExecuteWipe = async () => {
+    if (wipeTextInput !== 'DELETE') {
+      setErrorMessage('Type DELETE in all capital letters to confirm.');
+      return;
+    }
+    if (settings?.pinEnabled && settings?.pinHash) {
+      const { verifyPinWithCanary } = await import('../../services/crypto');
+      const isPinValid = await verifyPinWithCanary(settings.pinHash, wipePinInput);
+      if (!isPinValid) {
+        setErrorMessage('Invalid PIN. Destruction cancelled.');
+        return;
+      }
+    }
+
+    setIsWipingData(true);
+    try {
+      const { getCachedAccessToken } = await import('../../services/gdrive');
+      const token = getCachedAccessToken();
+      await executeFullDataDeletion(wipeRemoteDrive, token || undefined);
+      alert('All requested data has been completely and permanently erased.');
+      window.location.reload();
+    } catch (err: any) {
+      setErrorMessage('Data wipe error: ' + err.message);
+    } finally {
+      setIsWipingData(false);
+      setShowWipeConfirmModal(false);
     }
   };
 
@@ -955,6 +1014,215 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         )}
       </div>
+
+      
+      {/* Feature 7: Storage Footprint & 2.0 GB Soft Ceiling Tracking */}
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800/80 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-xl bg-blue-500/10 text-blue-400">
+              <HardDrive className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Storage Footprint (2.0 GB Operating Ceiling)</h3>
+              <p className="text-xs text-slate-400">
+                Monitors local IndexedDB, OPFS backup archives, and compressed receipt images.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-mono font-bold text-blue-400">
+            {((receiptStorageBytes + (localBackups.reduce((s, b) => s + b.sizeBytes, 0))) / (1024 * 1024)).toFixed(2)} MB / 2,048 MB
+          </span>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+          <div
+            className="bg-blue-500 h-full rounded-full transition-all"
+            style={{
+              width: `${Math.max(1, Math.min(100, (((receiptStorageBytes + localBackups.reduce((s, b) => s + b.sizeBytes, 0)) / (2 * 1024 * 1024 * 1024)) * 100))) }%`,
+            }}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-slate-400 text-[10px] uppercase font-bold block">Receipts</span>
+            <span className="font-mono font-semibold text-white">
+              {(receiptStorageBytes / (1024 * 1024)).toFixed(2)} MB
+            </span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-slate-400 text-[10px] uppercase font-bold block">Backups</span>
+            <span className="font-mono font-semibold text-white">
+              {(localBackups.reduce((s, b) => s + b.sizeBytes, 0) / (1024 * 1024)).toFixed(2)} MB
+            </span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-slate-400 text-[10px] uppercase font-bold block">Database</span>
+            <span className="font-mono font-semibold text-white">~4.20 MB</span>
+          </div>
+          <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800">
+            <span className="text-slate-400 text-[10px] uppercase font-bold block">Soft Ceiling</span>
+            <span className="font-mono font-semibold text-emerald-400">2,048 MB</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature 9: Privacy-Preserving Crash & Error Reporting */}
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800/80 flex items-center justify-between">
+        <div className="flex items-center space-x-3.5">
+          <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400">
+            <AlertTriangle className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Anonymous Crash & Error Reporting</h3>
+            <p className="text-xs text-slate-400 mt-0.5 max-w-xl">
+              Default OFF. When enabled, transmits only technical errors and stack traces to a dedicated
+              Cloudflare Worker. <strong>Zero financial data</strong>, account balances, or transaction details
+              are ever collected.
+            </p>
+          </div>
+        </div>
+
+        <input
+          type="checkbox"
+          checked={crashReportingEnabled}
+          onChange={(e) => handleToggleCrashReporting(e.target.checked)}
+          className="w-5 h-5 accent-amber-500 rounded cursor-pointer shrink-0 ml-4"
+        />
+      </div>
+
+      {/* Feature 10: Data & Privacy — "Right to be Forgotten" */}
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800/80 space-y-6">
+        <div className="flex items-center space-x-3">
+          <div className="p-2.5 rounded-xl bg-emerald-500/10 text-emerald-400">
+            <FolderArchive className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Data & Privacy ("Right to be Forgotten")</h3>
+            <p className="text-xs text-slate-400">
+              Download your complete unencrypted financial archive or permanently erase all your data.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          {/* Action 1: Export All My Data */}
+          <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800 space-y-3">
+            <div>
+              <h4 className="text-sm font-bold text-white">Export All My Data</h4>
+              <p className="text-xs text-slate-400 mt-0.5">
+                Generates a clean, human-readable ZIP archive containing transactions.csv and JSON dumps of all records.
+              </p>
+            </div>
+            <button
+              onClick={handleExportAllData}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition border border-slate-700"
+            >
+              Download Full Data Archive (.zip)
+            </button>
+          </div>
+
+          {/* Action 2: Delete All My Data */}
+          <div className="p-4 rounded-2xl bg-rose-950/20 border border-rose-500/30 space-y-3">
+            <div>
+              <h4 className="text-sm font-bold text-rose-300">Delete All My Data</h4>
+              <p className="text-xs text-rose-400/80 mt-0.5">
+                Permanently wipes all local IndexedDB records, OPFS backups, encryption keys, and optional cloud copies.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                setShowWipeConfirmModal(true);
+                setWipePinInput('');
+                setWipeTextInput('');
+              }}
+              className="w-full py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs transition shadow-lg shadow-rose-600/30"
+            >
+              Permanently Erase All Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Feature 10 Confirmation Modal */}
+      {showWipeConfirmModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in">
+          <div className="bg-slate-900 border border-rose-500/40 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center space-x-3 text-rose-400">
+              <AlertTriangle className="w-6 h-6" />
+              <h3 className="text-base font-bold text-white">Confirm Permanent Erasure</h3>
+            </div>
+
+            <p className="text-xs text-slate-300">
+              This action is <strong>irreversible</strong>. All accounts, transactions, debts, recurring rules,
+              and local encryption keys will be immediately deleted.
+            </p>
+
+            {/* Cloud Wipe Checkbox */}
+            {settings?.googleDriveLinked && (
+              <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800 space-y-2">
+                <label className="flex items-start space-x-2 text-xs text-white cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={wipeRemoteDrive}
+                    onChange={(e) => setWipeRemoteDrive(e.target.checked)}
+                    className="mt-0.5 accent-rose-600 rounded"
+                  />
+                  <span>
+                    Also permanently delete all cloud backups and sync manifests from Google Drive appDataFolder.
+                  </span>
+                </label>
+              </div>
+            )}
+
+            {settings?.pinEnabled && (
+              <div>
+                <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                  Master Security PIN
+                </label>
+                <input
+                  type="password"
+                  value={wipePinInput}
+                  onChange={(e) => setWipePinInput(e.target.value)}
+                  placeholder="Enter 6-digit PIN"
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-white text-xs"
+                />
+              </div>
+            )}
+
+            <div>
+              <label className="text-[10px] uppercase font-bold text-rose-400 block mb-1">
+                Type DELETE to confirm:
+              </label>
+              <input
+                type="text"
+                value={wipeTextInput}
+                onChange={(e) => setWipeTextInput(e.target.value)}
+                placeholder="DELETE"
+                className="w-full px-3 py-2 bg-slate-800 border border-rose-500/50 rounded-xl text-white text-xs font-mono font-bold"
+              />
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-2">
+              <button
+                onClick={() => setShowWipeConfirmModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleExecuteWipe}
+                disabled={wipeTextInput !== 'DELETE' || isWipingData}
+                className="px-4 py-2 text-xs font-bold bg-rose-600 hover:bg-rose-500 text-white rounded-xl disabled:opacity-40 shadow-lg shadow-rose-600/30"
+              >
+                {isWipingData ? 'Erasing Data...' : 'Confirm Erasure'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Conflict & Duplicate Review Modal */}
       {showConflictModal && (

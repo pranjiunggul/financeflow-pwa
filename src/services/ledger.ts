@@ -324,3 +324,157 @@ export async function softDeleteCategory(id: string, replacementCategoryId?: str
   await recordAudit('category', id, 'soft_delete', `Soft deleted category ${category.name}`, category);
   return { success: true };
 }
+
+
+/**
+ * Feature 6: Bulk Soft Delete Transactions
+ * Deletes multiple transactions in a single batch, preserving audit logs and recalculating balances.
+ */
+export async function bulkSoftDeleteTransactions(txIds: string[]): Promise<number> {
+  if (txIds.length === 0) return 0;
+
+  const now = Date.now();
+  let count = 0;
+
+  await db.transaction('rw', [db.transactions, db.audit_logs], async () => {
+    for (const id of txIds) {
+      const existing = await db.transactions.get(id);
+      if (existing && !existing.isDeleted) {
+        await db.transactions.update(id, {
+          isDeleted: true,
+          updatedAt: now,
+          version: (existing.version || 1) + 1,
+        });
+        await recordAudit(
+          'transaction',
+          id,
+          'soft_delete',
+          `Bulk soft-deleted transaction: ${existing.amount} ${existing.currency} (${existing.description})`,
+          existing
+        );
+        count++;
+      }
+    }
+  });
+
+  await recalculateAllAccountBalances();
+  return count;
+}
+
+/**
+ * Feature 6: Bulk Reassign Category
+ */
+export async function bulkReassignCategory(txIds: string[], newCategoryId: string): Promise<number> {
+  if (txIds.length === 0) return 0;
+
+  const now = Date.now();
+  let count = 0;
+
+  await db.transaction('rw', [db.transactions, db.audit_logs], async () => {
+    for (const id of txIds) {
+      const existing = await db.transactions.get(id);
+      if (existing && !existing.isDeleted && existing.categoryId !== newCategoryId) {
+        const updated = {
+          ...existing,
+          categoryId: newCategoryId,
+          updatedAt: now,
+          version: (existing.version || 1) + 1,
+        };
+        await db.transactions.put(updated);
+        await recordAudit(
+          'transaction',
+          id,
+          'update',
+          `Bulk reassigned category to ${newCategoryId}`,
+          existing,
+          updated
+        );
+        count++;
+      }
+    }
+  });
+
+  return count;
+}
+
+/**
+ * Feature 6: Bulk Reassign Account
+ */
+export async function bulkReassignAccount(txIds: string[], newAccountId: string): Promise<number> {
+  if (txIds.length === 0) return 0;
+
+  const now = Date.now();
+  let count = 0;
+
+  await db.transaction('rw', [db.transactions, db.accounts, db.audit_logs], async () => {
+    for (const id of txIds) {
+      const existing = await db.transactions.get(id);
+      if (existing && !existing.isDeleted && existing.accountId !== newAccountId) {
+        const updated = {
+          ...existing,
+          accountId: newAccountId,
+          updatedAt: now,
+          version: (existing.version || 1) + 1,
+        };
+        await db.transactions.put(updated);
+        await recordAudit(
+          'transaction',
+          id,
+          'update',
+          `Bulk reassigned account to ${newAccountId}`,
+          existing,
+          updated
+        );
+        count++;
+      }
+    }
+  });
+
+  await recalculateAllAccountBalances();
+  return count;
+}
+
+/**
+ * Feature 6: Bulk Add/Remove Tags
+ */
+export async function bulkUpdateTags(
+  txIds: string[],
+  addTags: string[] = [],
+  removeTags: string[] = []
+): Promise<number> {
+  if (txIds.length === 0) return 0;
+
+  const now = Date.now();
+  let count = 0;
+
+  await db.transaction('rw', [db.transactions, db.audit_logs], async () => {
+    for (const id of txIds) {
+      const existing = await db.transactions.get(id);
+      if (existing && !existing.isDeleted) {
+        const currentTags = new Set(existing.tags || []);
+        addTags.forEach((t) => currentTags.add(t.trim().toLowerCase()));
+        removeTags.forEach((t) => currentTags.delete(t.trim().toLowerCase()));
+
+        const updatedTags = Array.from(currentTags);
+        const updated = {
+          ...existing,
+          tags: updatedTags,
+          updatedAt: now,
+          version: (existing.version || 1) + 1,
+        };
+        await db.transactions.put(updated);
+        await recordAudit(
+          'transaction',
+          id,
+          'update',
+          `Bulk updated tags: [${updatedTags.join(', ')}]`,
+          existing,
+          updated
+        );
+        count++;
+      }
+    }
+  });
+
+  return count;
+}

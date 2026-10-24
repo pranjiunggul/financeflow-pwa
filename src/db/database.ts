@@ -14,6 +14,9 @@ import type {
   AIKeyRecord,
   AIPriorityItem,
   AIPersistentAlert,
+  SubscriptionPattern,
+  AIChatSession,
+  ReceiptAttachment,
 } from '../types';
 import { PRESET_AI_PROVIDERS } from '../services/aiPresets';
 
@@ -34,9 +37,12 @@ export class FinanceDatabase extends Dexie {
   ai_priorities!: Table<AIPriorityItem, string>;
   ai_failure_alerts!: Table<AIPersistentAlert, string>;
   sync_duplicates!: Table<import('../types').SyncDuplicatePair, string>;
+  subscription_patterns!: Table<SubscriptionPattern, string>;
+  ai_chat_sessions!: Table<AIChatSession, string>;
+  receipt_attachments!: Table<ReceiptAttachment, string>;
 
-  constructor() {
-    super('FinanceFlowDB');
+  constructor(dbName: string = 'FinanceFlowDB') {
+    super(dbName);
 
     this.version(1).stores({
       accounts: 'id, type, currency, isDeleted, updatedAt',
@@ -67,6 +73,12 @@ export class FinanceDatabase extends Dexie {
 
     this.version(5).stores({
       sync_duplicates: 'id, status, detectedAt',
+    });
+
+    this.version(6).stores({
+      subscription_patterns: 'id, patternKey, dismissed, createdAt',
+      ai_chat_sessions: 'id, isDeleted, createdAt, updatedAt',
+      receipt_attachments: 'id, transactionId, isDeleted, createdAt',
     });
   }
 }

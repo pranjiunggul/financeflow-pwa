@@ -6,6 +6,11 @@ import {
   RotateCcw,
   Calendar,
   Layers,
+  CheckSquare,
+  Square,
+  Tag,
+  FolderSync,
+  X,
 } from 'lucide-react';
 import type {
   Transaction,
@@ -14,7 +19,13 @@ import type {
   CurrencyCode,
 } from '../../types';
 import { formatCurrency } from '../../services/fx';
-import { restoreTransaction } from '../../services/ledger';
+import {
+  restoreTransaction,
+  bulkSoftDeleteTransactions,
+  bulkReassignCategory,
+  bulkReassignAccount,
+  bulkUpdateTags,
+} from '../../services/ledger';
 import { IconRenderer } from '../common/IconRenderer';
 
 interface TransactionListViewProps {
@@ -41,6 +52,69 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
   const [selectedAccountId, setSelectedAccountId] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('month');
   const [showTrash, setShowTrash] = useState(false);
+
+  // Feature 6: Multi-Select Mode State
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [selectedTxIds, setSelectedTxIds] = useState<Set<string>>(new Set());
+  const [bulkModalType, setBulkModalType] = useState<'category' | 'account' | 'tag' | null>(null);
+  const [targetCategoryId, setTargetCategoryId] = useState('');
+  const [targetAccountId, setTargetAccountId] = useState('');
+  const [tagsToAddInput, setTagsToAddInput] = useState('');
+  const [tagsToRemoveInput, setTagsToRemoveInput] = useState('');
+
+  const toggleSelect = (id: string) => {
+    setSelectedTxIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSelectAll = () => {
+    if (selectedTxIds.size === filteredTransactions.length) {
+      setSelectedTxIds(new Set());
+    } else {
+      setSelectedTxIds(new Set(filteredTransactions.map((t) => t.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedTxIds.size === 0) return;
+    if (window.confirm(`Are you sure you want to delete ${selectedTxIds.size} transactions?`)) {
+      await bulkSoftDeleteTransactions(Array.from(selectedTxIds));
+      setSelectedTxIds(new Set());
+      setIsSelectionMode(false);
+    }
+  };
+
+  const handleApplyBulkCategory = async () => {
+    if (!targetCategoryId || selectedTxIds.size === 0) return;
+    await bulkReassignCategory(Array.from(selectedTxIds), targetCategoryId);
+    setBulkModalType(null);
+    setSelectedTxIds(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const handleApplyBulkAccount = async () => {
+    if (!targetAccountId || selectedTxIds.size === 0) return;
+    await bulkReassignAccount(Array.from(selectedTxIds), targetAccountId);
+    setBulkModalType(null);
+    setSelectedTxIds(new Set());
+    setIsSelectionMode(false);
+  };
+
+  const handleApplyBulkTags = async () => {
+    if (selectedTxIds.size === 0) return;
+    const addArr = tagsToAddInput.split(',').map((s) => s.trim()).filter(Boolean);
+    const remArr = tagsToRemoveInput.split(',').map((s) => s.trim()).filter(Boolean);
+    await bulkUpdateTags(Array.from(selectedTxIds), addArr, remArr);
+    setBulkModalType(null);
+    setTagsToAddInput('');
+    setTagsToRemoveInput('');
+    setSelectedTxIds(new Set());
+    setIsSelectionMode(false);
+  };
 
   // Filter items
   const filteredTransactions = useMemo(() => {
@@ -119,6 +193,21 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
         </div>
 
         <div className="flex items-center space-x-2">
+          <button
+            onClick={() => {
+              setIsSelectionMode(!isSelectionMode);
+              setSelectedTxIds(new Set());
+            }}
+            className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition ${
+              isSelectionMode
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'bg-slate-900 border border-slate-800 text-slate-400 hover:text-white'
+            }`}
+          >
+            <CheckSquare className="w-3.5 h-3.5" />
+            <span>{isSelectionMode ? 'Cancel Select' : 'Select'}</span>
+          </button>
+
           <button
             onClick={() => setShowTrash(!showTrash)}
             className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center space-x-1.5 transition ${
@@ -267,14 +356,37 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
                     return (
                       <div
                         key={tx.id}
-                        onClick={() => !showTrash && onEditTransaction(tx)}
+                        onClick={() => {
+                          if (isSelectionMode) {
+                            toggleSelect(tx.id);
+                          } else if (!showTrash) {
+                            onEditTransaction(tx);
+                          }
+                        }}
                         className={`p-3.5 flex items-center justify-between transition ${
-                          showTrash
+                          selectedTxIds.has(tx.id)
+                            ? 'bg-blue-950/30 border-l-4 border-l-blue-500'
+                            : showTrash
                             ? 'opacity-70 bg-rose-950/10'
                             : 'hover:bg-slate-800/40 cursor-pointer'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
+                          {isSelectionMode && (
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleSelect(tx.id);
+                              }}
+                              className="text-slate-400 hover:text-white shrink-0 pr-1 cursor-pointer"
+                            >
+                              {selectedTxIds.has(tx.id) ? (
+                                <CheckSquare className="w-5 h-5 text-blue-400" />
+                              ) : (
+                                <Square className="w-5 h-5 text-slate-600" />
+                              )}
+                            </div>
+                          )}
                           <div
                             className="p-2.5 rounded-xl shrink-0"
                             style={{
@@ -326,6 +438,15 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
                                 </>
                               )}
                             </div>
+                            {tx.tags && tx.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-1">
+                                {tx.tags.map((t) => (
+                                  <span key={t} className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded font-mono">
+                                    #{t}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
                           </div>
                         </div>
 
@@ -375,6 +496,186 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Feature 6: Floating Bulk Action Bar */}
+      {isSelectionMode && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 bg-slate-900/95 border border-slate-700/80 backdrop-blur-md rounded-2xl shadow-2xl px-4 py-3 flex items-center space-x-3 text-xs animate-fade-in max-w-lg w-[92%] sm:w-auto">
+          <div className="font-bold text-white shrink-0 pr-2 border-r border-slate-700">
+            {selectedTxIds.size} selected
+          </div>
+
+          <button
+            onClick={handleSelectAll}
+            className="text-slate-300 hover:text-white font-medium"
+          >
+            {selectedTxIds.size === filteredTransactions.length ? 'Deselect All' : 'Select All'}
+          </button>
+
+          {selectedTxIds.size > 0 && (
+            <>
+              <button
+                onClick={() => setBulkModalType('category')}
+                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-indigo-300 flex items-center space-x-1 font-semibold"
+                title="Change Category"
+              >
+                <FolderSync className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Category</span>
+              </button>
+
+              <button
+                onClick={() => setBulkModalType('account')}
+                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-sky-300 flex items-center space-x-1 font-semibold"
+                title="Change Account"
+              >
+                <FolderSync className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Account</span>
+              </button>
+
+              <button
+                onClick={() => setBulkModalType('tag')}
+                className="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 flex items-center space-x-1 font-semibold"
+                title="Manage Tags"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Tags</span>
+              </button>
+
+              <button
+                onClick={handleBulkDelete}
+                className="px-2.5 py-1.5 rounded-lg bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 flex items-center space-x-1 font-semibold"
+                title="Delete Selected"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
+            </>
+          )}
+
+          <button
+            onClick={() => {
+              setIsSelectionMode(false);
+              setSelectedTxIds(new Set());
+            }}
+            className="p-1 text-slate-400 hover:text-white ml-auto"
+            title="Cancel Selection"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Bulk Action Modals */}
+      {bulkModalType === 'category' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-sm w-full space-y-4">
+            <h4 className="text-sm font-bold text-white">Reassign Category ({selectedTxIds.size} transactions)</h4>
+            <select
+              value={targetCategoryId}
+              onChange={(e) => setTargetCategoryId(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs"
+            >
+              <option value="">Select target category...</option>
+              {categories.filter((c) => !c.isDeleted).map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setBulkModalType(null)}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyBulkCategory}
+                disabled={!targetCategoryId}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg disabled:opacity-40"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bulkModalType === 'account' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-sm w-full space-y-4">
+            <h4 className="text-sm font-bold text-white">Reassign Account ({selectedTxIds.size} transactions)</h4>
+            <select
+              value={targetAccountId}
+              onChange={(e) => setTargetAccountId(e.target.value)}
+              className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs"
+            >
+              <option value="">Select target account...</option>
+              {accounts.filter((a) => !a.isDeleted).map((a) => (
+                <option key={a.id} value={a.id}>{a.name} ({a.currency})</option>
+              ))}
+            </select>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setBulkModalType(null)}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyBulkAccount}
+                disabled={!targetAccountId}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-sky-600 hover:bg-sky-500 text-white rounded-lg disabled:opacity-40"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {bulkModalType === 'tag' && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 max-w-sm w-full space-y-4">
+            <h4 className="text-sm font-bold text-white">Manage Tags ({selectedTxIds.size} transactions)</h4>
+            <div>
+              <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                Tags to Add (comma separated)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. liburan-bali, reimbursement"
+                value={tagsToAddInput}
+                onChange={(e) => setTagsToAddInput(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1">
+                Tags to Remove (comma separated)
+              </label>
+              <input
+                type="text"
+                placeholder="e.g. pending"
+                value={tagsToRemoveInput}
+                onChange={(e) => setTagsToRemoveInput(e.target.value)}
+                className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-3 py-2 text-xs"
+              />
+            </div>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setBulkModalType(null)}
+                className="px-3 py-1.5 text-xs text-slate-400 hover:text-white"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleApplyBulkTags}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
