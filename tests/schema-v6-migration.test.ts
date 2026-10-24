@@ -230,10 +230,10 @@ async function runMigrationTest() {
   await v6Db.open();
 
   console.log(`Upgraded database opened at schema version: ${v6Db.verno}`);
-  if (v6Db.verno !== 6) {
-    throw new Error(`Expected upgraded database version 6, got ${v6Db.verno}`);
+  if (v6Db.verno < 6) {
+    throw new Error(`Expected upgraded database version >= 6, got ${v6Db.verno}`);
   }
-  console.log(`[PASS] Schema version successfully migrated from 5 -> 6.`);
+  console.log(`[PASS] Schema version successfully migrated from 5 -> ${v6Db.verno}.`);
 
   // Step 3: Verify zero data loss across existing v5 tables
   console.log('\n--- Step 3: Verifying Data Preservation Across All Existing Tables ---');

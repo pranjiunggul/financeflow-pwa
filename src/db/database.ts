@@ -17,6 +17,10 @@ import type {
   SubscriptionPattern,
   AIChatSession,
   ReceiptAttachment,
+  FinancialGoal,
+  InvestmentAsset,
+  AssetValuation,
+  Achievement,
 } from '../types';
 import { PRESET_AI_PROVIDERS } from '../services/aiPresets';
 
@@ -40,6 +44,10 @@ export class FinanceDatabase extends Dexie {
   subscription_patterns!: Table<SubscriptionPattern, string>;
   ai_chat_sessions!: Table<AIChatSession, string>;
   receipt_attachments!: Table<ReceiptAttachment, string>;
+  financial_goals!: Table<FinancialGoal, string>;
+  investment_assets!: Table<InvestmentAsset, string>;
+  asset_valuations!: Table<AssetValuation, string>;
+  achievements!: Table<Achievement, string>;
 
   constructor(dbName: string = 'FinanceFlowDB') {
     super(dbName);
@@ -79,6 +87,13 @@ export class FinanceDatabase extends Dexie {
       subscription_patterns: 'id, patternKey, dismissed, createdAt',
       ai_chat_sessions: 'id, isDeleted, createdAt, updatedAt',
       receipt_attachments: 'id, transactionId, isDeleted, createdAt',
+    });
+
+    this.version(7).stores({
+      financial_goals: 'id, isDeleted, targetDate, createdAt',
+      investment_assets: 'id, type, isDeleted, lastValuationDate, createdAt',
+      asset_valuations: 'id, assetId, date, createdAt',
+      achievements: 'id, type, unlockedAt',
     });
   }
 }

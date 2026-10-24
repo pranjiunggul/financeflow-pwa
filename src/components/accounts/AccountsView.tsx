@@ -1,8 +1,9 @@
-import React from 'react';
-import { Plus, Edit2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Plus, Edit2, Landmark, TrendingUp } from 'lucide-react';
 import type { Account, CurrencyCode } from '../../types';
 import { formatCurrency } from '../../services/fx';
 import { IconRenderer } from '../common/IconRenderer';
+import { InvestmentsView } from '../investments/InvestmentsView';
 
 interface AccountsViewProps {
   accounts: Account[];
@@ -17,6 +18,7 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
   onOpenNewAccount,
   onEditAccount,
 }) => {
+  const [subTab, setSubTab] = useState<'cash_banks' | 'investments'>('cash_banks');
   const activeAccounts = accounts.filter((a) => !a.isDeleted);
 
   const totalCalculatedNet = activeAccounts
@@ -28,26 +30,57 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
 
   return (
     <div className="space-y-6 pb-20 sm:pb-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Accounts & Wallets</h2>
-          <p className="text-xs text-slate-400">
-            {activeAccounts.length} accounts configured • Total Net Worth: {formatCurrency(totalCalculatedNet, baseCurrency)}
-          </p>
-        </div>
+      {/* Sub-Tab Navigation: Cash & Bank Accounts vs Non-Cash Investments */}
+      <div className="flex items-center space-x-1 p-1 bg-slate-900 border border-slate-800 rounded-2xl w-fit">
+        <button
+          onClick={() => setSubTab('cash_banks')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            subTab === 'cash_banks'
+              ? 'bg-blue-600 text-white shadow-md shadow-blue-600/30'
+              : 'text-slate-400 hover:text-white'
+          }`}
+        >
+          <Landmark className="w-3.5 h-3.5" />
+          <span>Cash & Bank Accounts</span>
+        </button>
 
         <button
-          onClick={onOpenNewAccount}
-          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 flex items-center space-x-1.5 transition self-start sm:self-auto"
+          onClick={() => setSubTab('investments')}
+          className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition ${
+            subTab === 'investments'
+              ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+              : 'text-slate-400 hover:text-white'
+          }`}
         >
-          <Plus className="w-4 h-4" />
-          <span>New Account</span>
+          <TrendingUp className="w-3.5 h-3.5" />
+          <span>Investments & Non-Cash</span>
         </button>
       </div>
 
-      {/* Grid of Accounts */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {subTab === 'investments' ? (
+        <InvestmentsView baseCurrency={baseCurrency} />
+      ) : (
+        <>
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">Accounts & Wallets</h2>
+              <p className="text-xs text-slate-400">
+                {activeAccounts.length} accounts configured • Total Net Worth: {formatCurrency(totalCalculatedNet, baseCurrency)}
+              </p>
+            </div>
+
+            <button
+              onClick={onOpenNewAccount}
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 flex items-center space-x-1.5 transition self-start sm:self-auto"
+            >
+              <Plus className="w-4 h-4" />
+              <span>New Account</span>
+            </button>
+          </div>
+
+          {/* Grid of Accounts */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {activeAccounts.map((acc) => (
           <div
             key={acc.id}
@@ -119,6 +152,8 @@ export const AccountsView: React.FC<AccountsViewProps> = ({
           </div>
         ))}
       </div>
+        </>
+      )}
     </div>
   );
 };

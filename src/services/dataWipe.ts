@@ -26,6 +26,10 @@ export async function generateFullDataArchiveZip(
     recurringRules,
     auditLogs,
     settings,
+    financialGoals,
+    investmentAssets,
+    assetValuations,
+    achievements,
   ] = await Promise.all([
     db.accounts.toArray(),
     db.categories.toArray(),
@@ -35,6 +39,10 @@ export async function generateFullDataArchiveZip(
     db.recurring_rules.toArray(),
     db.audit_logs.toArray(),
     db.settings.get('current'),
+    db.financial_goals.toArray(),
+    db.investment_assets.toArray(),
+    db.asset_valuations.toArray(),
+    db.achievements.toArray(),
   ]);
 
   // 1. Transactions CSV
@@ -60,6 +68,10 @@ export async function generateFullDataArchiveZip(
     { filename: 'recurring_rules.json', content: JSON.stringify(recurringRules, null, 2) },
     { filename: 'audit_logs.json', content: JSON.stringify(auditLogs, null, 2) },
     { filename: 'settings_sanitized.json', content: JSON.stringify(sanitizedSettings, null, 2) },
+    { filename: 'financial_goals.json', content: JSON.stringify(financialGoals, null, 2) },
+    { filename: 'investment_assets.json', content: JSON.stringify(investmentAssets, null, 2) },
+    { filename: 'asset_valuations.json', content: JSON.stringify(assetValuations, null, 2) },
+    { filename: 'achievements.json', content: JSON.stringify(achievements, null, 2) },
   ];
 
   return createZipArchive(files);

@@ -3,6 +3,7 @@ import type {
   Account,
   Category,
   CurrencyCode,
+  InvestmentAsset,
 } from '../types';
 
 export interface MonthlyCashFlow {
@@ -200,17 +201,26 @@ export function getNetWorthTimeline(
   transactions: Transaction[],
   accounts: Account[],
   baseCurrency: CurrencyCode,
-  days: number = 30
+  days: number = 30,
+  investmentAssets: InvestmentAsset[] = []
 ): NetWorthPoint[] {
   const result: NetWorthPoint[] = [];
   const now = new Date();
 
-  // 1. Current Net Worth
+  // 1. Current Net Worth (Cash/Bank accounts + Non-cash investment assets)
   const activeAccounts = accounts.filter((a) => !a.isDeleted && a.includeInNetWorth);
-  const currentTotal = activeAccounts.reduce((sum, acc) => {
+  const accountsTotal = activeAccounts.reduce((sum, acc) => {
     const rate = acc.currency === baseCurrency ? 1.0 : acc.currency === 'USD' ? 16250 : 1.0;
     return sum + acc.currentBalance * rate;
   }, 0);
+
+  const activeAssets = (investmentAssets || []).filter((a) => !a.isDeleted && a.includeInNetWorth);
+  const assetsTotal = activeAssets.reduce((sum, asset) => {
+    const rate = asset.currency === baseCurrency ? 1.0 : asset.currency === 'USD' ? 16250 : 1.0;
+    return sum + asset.currentValue * rate;
+  }, 0);
+
+  const currentTotal = accountsTotal + assetsTotal;
 
   // 2. Generate daily dates backwards
   const dateMap = new Map<string, number>();

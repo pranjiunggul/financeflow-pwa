@@ -12,6 +12,8 @@ import {
   AlertTriangle,
   Sparkles,
   CreditCard,
+  Target,
+  X,
 } from 'lucide-react';
 import type {
   Account,
@@ -21,6 +23,10 @@ import type {
 } from '../../types';
 import { formatCurrency } from '../../services/fx';
 import { IconRenderer } from '../common/IconRenderer';
+import { calculateStreaks, evaluateAndUnlockMilestones } from '../../services/gamification';
+import { calculateGoalProgress } from '../../services/goals';
+import { GamificationBar } from '../gamification/GamificationBar';
+import { GoalsView } from '../goals/GoalsView';
 
 // Visual Charts
 import { NetWorthChart } from './NetWorthChart';
@@ -62,14 +68,41 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
   const [isWrappedOpen, setIsWrappedOpen] = React.useState(false);
   const [isSubscriptionsOpen, setIsSubscriptionsOpen] = React.useState(false);
+  const [isGoalsViewOpen, setIsGoalsViewOpen] = React.useState(false);
 
-  // 1. Calculate Total Net Worth normalized in Base Currency
-  const totalNetWorth = activeAccounts
+  // Live queries for non-cash assets, financial goals, recurring rules & achievements
+  const investmentAssets = useLiveQuery(() => db.investment_assets.filter((a) => !a.isDeleted).toArray()) || [];
+  const financialGoals = useLiveQuery(() => db.financial_goals.filter((g) => !g.isDeleted).toArray()) || [];
+  const recurringRules = useLiveQuery(() => db.recurring_rules.filter((r) => !r.isDeleted).toArray()) || [];
+  const unlockedAchievements = useLiveQuery(() => db.achievements.toArray()) || [];
+
+  // Gamification streaks & automated milestone evaluation
+  const streaks = React.useMemo(() => calculateStreaks(activeTransactions), [activeTransactions]);
+
+  React.useEffect(() => {
+    evaluateAndUnlockMilestones({
+      transactions: activeTransactions,
+      goals: financialGoals,
+      assets: investmentAssets,
+    });
+  }, [activeTransactions.length, financialGoals.length, investmentAssets.length]);
+
+  // 1. Calculate Total Net Worth normalized in Base Currency (Cash Accounts + Non-Cash Investment Holdings)
+  const accountsNetWorth = activeAccounts
     .filter((a) => a.includeInNetWorth)
     .reduce((sum, acc) => {
       const approxRate = acc.currency === baseCurrency ? 1.0 : acc.currency === 'USD' ? 16250 : 1.0;
       return sum + acc.currentBalance * approxRate;
     }, 0);
+
+  const investmentsNetWorth = investmentAssets
+    .filter((a) => !a.isDeleted && a.includeInNetWorth)
+    .reduce((sum, asset) => {
+      const approxRate = asset.currency === baseCurrency ? 1.0 : asset.currency === 'USD' ? 16250 : 1.0;
+      return sum + asset.currentValue * approxRate;
+    }, 0);
+
+  const totalNetWorth = accountsNetWorth + investmentsNetWorth;
 
   // 2. Calculate Current Month Inflow, Outflow, and Net Cashflow
   const currentMonthPrefix = new Date().toISOString().slice(0, 7); // 'YYYY-MM'
@@ -110,6 +143,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </button>
         </div>
       )}
+
+      {/* Feature 5: Light Gamification Bar (Streaks & Milestones) */}
+      <GamificationBar streaks={streaks} unlockedAchievements={unlockedAchievements} />
 
       {/* Feature 1: Automatic Recurring Subscription Suggestion Banner */}
       <SubscriptionSuggestionBanner
@@ -245,12 +281,67 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 1. Net Worth Evolution Chart (Milestone 3.1) */}
+      {/* 1. Net Worth Evolution & Cash Flow Forecasting Chart */}
       <NetWorthChart
         transactions={transactions}
         accounts={accounts}
         baseCurrency={baseCurrency}
+        recurringRules={recurringRules}
+        investmentAssets={investmentAssets}
       />
+
+      {/* Feature 1: Financial Goals Dashboard Widget */}
+      {financialGoals.length > 0 && (
+        <div className="p-5 sm:p-6 rounded-3xl bg-slate-900/60 border border-slate-800/80 shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2.5">
+              <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                <Target className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                  Savings & Financial Goals
+                </h3>
+                <p className="text-xs text-slate-400">Velocity-driven targets</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setIsGoalsViewOpen(true)}
+              className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center space-x-1"
+            >
+              <span>Manage All ({financialGoals.length})</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {financialGoals.slice(0, 3).map((goal) => {
+              const progress = calculateGoalProgress(goal, accounts, transactions, baseCurrency);
+              return (
+                <div key={goal.id} className="p-4 bg-slate-950/80 border border-slate-800 rounded-2xl space-y-2">
+                  <div className="flex justify-between items-start">
+                    <span className="text-xs font-bold text-white truncate max-w-[70%]">{goal.name}</span>
+                    <span className="text-[11px] font-mono text-emerald-400 font-bold">{progress.percentage}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden border border-slate-800">
+                    <div
+                      className="h-full rounded-full transition-all duration-300"
+                      style={{ width: `${progress.percentage}%`, backgroundColor: goal.color || '#10b981' }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[11px] text-slate-400">
+                    <span>{formatCurrency(progress.currentAmount, baseCurrency)}</span>
+                    <span>Target: {formatCurrency(progress.targetAmount, baseCurrency)}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 truncate">
+                    {progress.projectedCompletionDate ? `Est: ${progress.projectedCompletionDate}` : 'Pace: Stagnant'}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* 2. Visual Comparison Grid: Cash Flow Bar & Category Donut */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -442,6 +533,34 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         onClose={() => setIsWrappedOpen(false)}
         baseCurrency={baseCurrency}
       />
+
+      {/* Feature 1: Financial Goals Full Management Modal */}
+      {isGoalsViewOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in">
+          <div className="w-full max-w-4xl bg-slate-950 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800 bg-slate-900">
+              <div className="flex items-center space-x-2.5">
+                <div className="p-2 bg-emerald-500/10 text-emerald-400 rounded-xl">
+                  <Target className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white">Savings & Financial Goals</h2>
+                  <p className="text-xs text-slate-400">Velocity-driven target tracking</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsGoalsViewOpen(false)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-6 overflow-y-auto">
+              <GoalsView accounts={accounts} transactions={transactions} baseCurrency={baseCurrency} />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

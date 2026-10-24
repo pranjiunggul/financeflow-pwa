@@ -9,6 +9,7 @@ import {
   TrendingUp,
   Sliders,
   History,
+  Mic,
 } from 'lucide-react';
 import type {
   Account,
@@ -20,10 +21,16 @@ import type {
 } from '../../types';
 import { sendUnifiedChatMessage } from '../../services/ai';
 import { saveChatSession, loadChatSessionMessages } from '../../services/chatHistory';
+import {
+  isSpeechRecognitionSupported,
+  isVoiceInputAcknowledged,
+  startVoiceListening,
+} from '../../services/voiceInput';
 import { ActionProposalCard } from './ActionProposalCard';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
 import { BulkHistoryImportModal } from '../transactions/BulkHistoryImportModal';
 import { ChatHistoryModal } from './ChatHistoryModal';
+import { VoicePrivacyModal } from '../voice/VoicePrivacyModal';
 
 interface AIChatViewProps {
   accounts: Account[];
@@ -74,7 +81,42 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
   const [isBulkHistoryModalOpen, setIsBulkHistoryModalOpen] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | Blob | null>(null);
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const stopListeningRef = useRef<(() => void) | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const handleMicClick = async () => {
+    if (!isSpeechRecognitionSupported()) return;
+
+    const isAcknowledged = await isVoiceInputAcknowledged();
+    if (!isAcknowledged) {
+      setIsVoiceModalOpen(true);
+      return;
+    }
+
+    if (isListening) {
+      if (stopListeningRef.current) stopListeningRef.current();
+      setIsListening(false);
+      return;
+    }
+
+    setIsListening(true);
+    const stopFn = startVoiceListening({
+      onResult: (transcript) => {
+        setInputText(transcript);
+      },
+      onError: (err) => {
+        console.warn('Voice recognition error:', err);
+        setIsListening(false);
+      },
+      onEnd: () => {
+        setIsListening(false);
+      },
+      lang: 'id-ID',
+    });
+    stopListeningRef.current = stopFn;
+  };
 
   const handleSelectSession = async (id: string) => {
     setIsLoading(true);
@@ -391,6 +433,21 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
           <Camera className="w-5 h-5 text-indigo-400" />
         </button>
 
+        {isSpeechRecognitionSupported() && (
+          <button
+            type="button"
+            onClick={handleMicClick}
+            className={`p-2.5 rounded-xl border transition ${
+              isListening
+                ? 'bg-rose-500/20 border-rose-500 text-rose-400 animate-pulse'
+                : 'bg-slate-900 border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white'
+            }`}
+            title={isListening ? 'Listening... click to stop' : 'Voice Input (Indonesian/English)'}
+          >
+            {isListening ? <Mic className="w-5 h-5 text-rose-400" /> : <Mic className="w-5 h-5 text-purple-400" />}
+          </button>
+        )}
+
         <input
           type="text"
           placeholder="Ask anything or log e.g. 'Makan siang 45rb cash'..."
@@ -456,6 +513,16 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         masterPin={masterPin}
         onSelectSession={handleSelectSession}
         onNewChat={handleNewChat}
+      />
+
+      {/* Feature 4: Privacy-Preserving Voice Input Modal */}
+      <VoicePrivacyModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onAcknowledged={() => {
+          setIsVoiceModalOpen(false);
+          handleMicClick();
+        }}
       />
     </div>
   );

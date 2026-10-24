@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Camera,
   Plus,
+  Mic,
 } from 'lucide-react';
 import type {
   Transaction,
@@ -31,10 +32,16 @@ import {
   softDeleteTransaction,
 } from '../../services/ledger';
 import { formatCurrency, getExchangeRate } from '../../services/fx';
+import {
+  isSpeechRecognitionSupported,
+  isVoiceInputAcknowledged,
+  startVoiceListening,
+} from '../../services/voiceInput';
 import { IconRenderer } from '../common/IconRenderer';
 import { ReceiptScannerModal } from '../chat/ReceiptScannerModal';
 import { QuickAddCategoryModal } from '../shared/QuickAddCategoryModal';
 import { QuickAddAccountModal } from '../shared/QuickAddAccountModal';
+import { VoicePrivacyModal } from '../voice/VoicePrivacyModal';
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -90,6 +97,43 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
   const [isQuickAddCategoryOpen, setIsQuickAddCategoryOpen] = useState<boolean>(false);
   const [isQuickAddAccountOpen, setIsQuickAddAccountOpen] = useState<boolean>(false);
   const [isQuickAddToAccountOpen, setIsQuickAddToAccountOpen] = useState<boolean>(false);
+
+  // Voice Input state
+  const [isVoiceModalOpen, setIsVoiceModalOpen] = useState<boolean>(false);
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const stopListeningRef = React.useRef<(() => void) | null>(null);
+
+  const handleMicClick = async () => {
+    if (!isSpeechRecognitionSupported()) return;
+
+    const isAcknowledged = await isVoiceInputAcknowledged();
+    if (!isAcknowledged) {
+      setIsVoiceModalOpen(true);
+      return;
+    }
+
+    if (isListening) {
+      if (stopListeningRef.current) stopListeningRef.current();
+      setIsListening(false);
+      return;
+    }
+
+    setIsListening(true);
+    const stopFn = startVoiceListening({
+      onResult: (transcript) => {
+        setDescription(transcript);
+      },
+      onError: (err) => {
+        console.warn('Voice recognition error:', err);
+        setIsListening(false);
+      },
+      onEnd: () => {
+        setIsListening(false);
+      },
+      lang: 'id-ID',
+    });
+    stopListeningRef.current = stopFn;
+  };
 
   const [errorMessage, setErrorMessage] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -765,15 +809,31 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
             <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">
               Note / Description
             </label>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="What is this transaction for?"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+            <div className="flex items-center space-x-2">
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  placeholder="What is this transaction for?"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className="w-full pl-9 pr-3 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <FileText className="w-4 h-4 text-slate-400 absolute left-3 top-3 pointer-events-none" />
+              </div>
+              {isSpeechRecognitionSupported() && (
+                <button
+                  type="button"
+                  onClick={handleMicClick}
+                  className={`p-2.5 rounded-xl border transition ${
+                    isListening
+                      ? 'bg-rose-500/20 border-rose-500 text-rose-400 animate-pulse'
+                      : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
+                  }`}
+                  title={isListening ? 'Listening... click to stop' : 'Voice Input (Indonesian/English)'}
+                >
+                  <Mic className="w-4 h-4 text-purple-400" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -867,6 +927,16 @@ export const TransactionModal: React.FC<TransactionModalProps> = ({
         baseCurrency={baseCurrency}
         onCreated={(newAcc) => {
           setToAccountId(newAcc.id);
+        }}
+      />
+
+      {/* Voice Privacy Disclosure Modal */}
+      <VoicePrivacyModal
+        isOpen={isVoiceModalOpen}
+        onClose={() => setIsVoiceModalOpen(false)}
+        onAcknowledged={() => {
+          setIsVoiceModalOpen(false);
+          handleMicClick();
         }}
       />
     </div>

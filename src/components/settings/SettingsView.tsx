@@ -20,6 +20,7 @@ import {
   Tablet,
   Edit2,
   Check,
+  Mic,
 } from 'lucide-react';
 import type {
   AppSettings,
@@ -33,6 +34,7 @@ import { db } from '../../db/database';
 import { useTranslation } from '../../i18n';
 import { recalculateAllAccountBalances } from '../../services/ledger';
 import { calculateReceiptsStorageBytes } from '../../services/receiptAttachments';
+import { setVoiceInputStatus } from '../../services/voiceInput';
 import { downloadFullDataArchive, executeFullDataDeletion } from '../../services/dataWipe';
 import {
   createEncryptedLocalBackup,
@@ -113,6 +115,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [dailyBackupEnabled, setDailyBackupEnabled] = useState(settings?.dailyBackupEnabled !== false);
   const [receiptStorageBytes, setReceiptStorageBytes] = useState(0);
   const [crashReportingEnabled, setCrashReportingEnabled] = useState(settings?.crashReportingEnabled === true);
+  const [voiceInputEnabled, setVoiceInputEnabled] = useState(settings?.voiceInputEnabled === true);
   const [isWipingData, setIsWipingData] = useState(false);
   const [wipeRemoteDrive, setWipeRemoteDrive] = useState(false);
   const [showWipeConfirmModal, setShowWipeConfirmModal] = useState(false);
@@ -172,6 +175,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setCrashReportingEnabled(enabled);
     await db.settings.update('current', { crashReportingEnabled: enabled });
     setStatusMessage(`Privacy-preserving crash reporting ${enabled ? 'enabled' : 'disabled'}.`);
+  };
+
+  // Feature 4: Toggle Voice Input
+  const handleToggleVoiceInput = async (enabled: boolean) => {
+    setVoiceInputEnabled(enabled);
+    await setVoiceInputStatus(enabled);
+    setStatusMessage(`Voice input ${enabled ? 'enabled' : 'disabled'}.`);
   };
 
   // Feature 10: Export All Data
@@ -1067,6 +1077,29 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <span className="font-mono font-semibold text-emerald-400">2,048 MB</span>
           </div>
         </div>
+      </div>
+
+      {/* Feature 4: Privacy-Preserving Voice Input */}
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800/80 flex items-center justify-between">
+        <div className="flex items-center space-x-3.5">
+          <div className="p-3 rounded-2xl bg-purple-500/10 text-purple-400">
+            <Mic className="w-6 h-6" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-white">Voice Input for Transactions</h3>
+            <p className="text-xs text-slate-400 mt-0.5 max-w-xl">
+              Enable microphone input in AI Chat and transaction dialogs using your browser's Web Speech API.
+              <em> Note: Audio transcription may be handled by your browser vendor's cloud service (e.g. Google servers in Chrome).</em> No personal ledger or balance data is transmitted.
+            </p>
+          </div>
+        </div>
+
+        <input
+          type="checkbox"
+          checked={voiceInputEnabled}
+          onChange={(e) => handleToggleVoiceInput(e.target.checked)}
+          className="w-5 h-5 accent-purple-500 rounded cursor-pointer shrink-0 ml-4"
+        />
       </div>
 
       {/* Feature 9: Privacy-Preserving Crash & Error Reporting */}

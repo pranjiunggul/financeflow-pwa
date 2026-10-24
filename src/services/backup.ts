@@ -27,6 +27,13 @@ export interface DatabaseDump {
     ai_providers?: any[];
     ai_keys?: any[];
     ai_priorities?: any[];
+    subscription_patterns?: any[];
+    ai_chat_sessions?: any[];
+    receipt_attachments?: any[];
+    financial_goals?: any[];
+    investment_assets?: any[];
+    asset_valuations?: any[];
+    achievements?: any[];
   };
 }
 
@@ -82,6 +89,13 @@ export async function createFullDatabaseDump(): Promise<DatabaseDump> {
     aiProviders,
     aiKeys,
     aiPriorities,
+    subscriptionPatterns,
+    aiChatSessions,
+    receiptAttachments,
+    financialGoals,
+    investmentAssets,
+    assetValuations,
+    achievements,
   ] = await Promise.all([
     db.accounts.toArray(),
     db.categories.toArray(),
@@ -95,6 +109,13 @@ export async function createFullDatabaseDump(): Promise<DatabaseDump> {
     db.ai_providers.toArray(),
     db.ai_keys.toArray(),
     db.ai_priorities.toArray(),
+    db.subscription_patterns.toArray(),
+    db.ai_chat_sessions.toArray(),
+    db.receipt_attachments.toArray(),
+    db.financial_goals.toArray(),
+    db.investment_assets.toArray(),
+    db.asset_valuations.toArray(),
+    db.achievements.toArray(),
   ]);
 
   return {
@@ -115,6 +136,13 @@ export async function createFullDatabaseDump(): Promise<DatabaseDump> {
       ai_providers: aiProviders,
       ai_keys: aiKeys,
       ai_priorities: aiPriorities,
+      subscription_patterns: subscriptionPatterns,
+      ai_chat_sessions: aiChatSessions,
+      receipt_attachments: receiptAttachments,
+      financial_goals: financialGoals,
+      investment_assets: investmentAssets,
+      asset_valuations: assetValuations,
+      achievements,
     },
   };
 }
@@ -385,6 +413,13 @@ export async function restoreEncryptedBackup(
   if (dump.tables.ai_providers?.length) await db.ai_providers.bulkPut(dump.tables.ai_providers);
   if (dump.tables.ai_keys?.length) await db.ai_keys.bulkPut(dump.tables.ai_keys);
   if (dump.tables.ai_priorities?.length) await db.ai_priorities.bulkPut(dump.tables.ai_priorities);
+  if (dump.tables.subscription_patterns?.length) await db.subscription_patterns.bulkPut(dump.tables.subscription_patterns);
+  if (dump.tables.ai_chat_sessions?.length) await db.ai_chat_sessions.bulkPut(dump.tables.ai_chat_sessions);
+  if (dump.tables.receipt_attachments?.length) await db.receipt_attachments.bulkPut(dump.tables.receipt_attachments);
+  if (dump.tables.financial_goals?.length) await db.financial_goals.bulkPut(dump.tables.financial_goals);
+  if (dump.tables.investment_assets?.length) await db.investment_assets.bulkPut(dump.tables.investment_assets);
+  if (dump.tables.asset_valuations?.length) await db.asset_valuations.bulkPut(dump.tables.asset_valuations);
+  if (dump.tables.achievements?.length) await db.achievements.bulkPut(dump.tables.achievements);
 
   // Restore user settings if present (preserving deviceId)
   if (dump.tables.settings?.length) {

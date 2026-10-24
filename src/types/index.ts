@@ -152,7 +152,7 @@ export interface RecurringRule {
 
 export interface AuditLog {
   id: string;
-  entityType: 'transaction' | 'account' | 'category' | 'debt' | 'recurring';
+  entityType: 'transaction' | 'account' | 'category' | 'debt' | 'recurring' | 'goal' | 'asset';
   entityId: string;
   action: 'create' | 'update' | 'soft_delete' | 'restore' | 'conflict_resolved' | 'conflict_superseded';
   deviceId: string;
@@ -205,6 +205,10 @@ export interface AppSettings {
 
   // Feature 9: Privacy-Preserving Opt-In Crash Reporting
   crashReportingEnabled?: boolean;
+
+  // Feature 4: Privacy-Preserving Voice Input Opt-In
+  voiceInputAcknowledged?: boolean;
+  voiceInputEnabled?: boolean;
 
   // Telegram Integration
   telegramEnabled?: boolean;
@@ -268,6 +272,10 @@ export interface SyncPayloadData {
     subscription_patterns?: SubscriptionPattern[];
     ai_chat_sessions?: AIChatSession[];
     receipt_attachments?: ReceiptAttachment[];
+    financial_goals?: FinancialGoal[];
+    investment_assets?: InvestmentAsset[];
+    asset_valuations?: AssetValuation[];
+    achievements?: Achievement[];
   };
 }
 
@@ -526,5 +534,111 @@ export interface ReceiptAttachment {
   createdAt: number;
   isDeleted: boolean;
 }
+
+// 5-Feature Batch Enhancement Types
+
+// Feature 1: Financial Goals
+export type GoalTrackingMode = 'manual' | 'linked_account';
+
+export interface FinancialGoal {
+  id: string;                     // 'goal_xxx'
+  name: string;
+  icon?: string;                  // Lucide icon name, e.g. 'Target', 'Plane', 'ShieldCheck'
+  color?: string;                 // Hex color e.g. '#10b981'
+  targetAmount: number;
+  currentAmount: number;
+  currency: CurrencyCode;
+  targetDate?: string;            // 'YYYY-MM-DD'
+  trackingMode: GoalTrackingMode; // 'manual' default
+  linkedAccountId?: string;
+  manualContribution: number;
+  status: 'active' | 'completed' | 'paused';
+  notes?: string;
+  // Multi-user forward compatibility placeholders
+  ownerId?: string;
+  visibility?: 'private' | 'shared';
+  // Sync & audit metadata
+  createdAt: number;
+  updatedAt: number;
+  isDeleted: boolean;
+  deviceId: string;
+  version: number;
+}
+
+// Feature 2: Investment & Non-Cash Assets
+export type InvestmentAssetType = 'stocks' | 'mutual_funds' | 'crypto' | 'gold_metals' | 'property' | 'other';
+
+export interface InvestmentAsset {
+  id: string;                     // 'asset_xxx'
+  type: InvestmentAssetType;
+  name: string;
+  tickerSymbol?: string;          // e.g. 'BTC', 'ETH', 'BBCA.JK', 'AAPL'
+  quantity?: number;
+  costBasis: number;              // Total acquisition cost
+  currentValue: number;           // Latest total valuation in asset currency
+  currency: CurrencyCode;
+  lastValuationDate: string;      // 'YYYY-MM-DD'
+  notes?: string;
+  includeInNetWorth: boolean;     // Default: true
+  // Multi-user forward compatibility
+  ownerId?: string;
+  // Sync & audit metadata
+  createdAt: number;
+  updatedAt: number;
+  isDeleted: boolean;
+  deviceId: string;
+  version: number;
+}
+
+export interface AssetValuation {
+  id: string;                     // 'val_xxx'
+  assetId: string;
+  date: string;                   // 'YYYY-MM-DD'
+  value: number;                  // Total valuation at this date
+  unitPrice?: number;             // Price per unit / share
+  source: 'manual' | 'api';
+  notes?: string;
+  createdAt: number;
+}
+
+// Feature 3: Cash Flow Forecast Types
+export interface CashFlowForecastPoint {
+  date: string;                   // 'YYYY-MM-DD'
+  label: string;                  // 'MM-DD'
+  projectedNetWorth: number;
+  projectedDiscretionaryExpense: number;
+  projectedRecurringDelta: number;
+  accountBalances: Record<string, number>;
+}
+
+export interface CashFlowInsight {
+  type: 'warning' | 'surplus' | 'neutral';
+  title: string;
+  message: string;
+  depletedAccountName?: string;
+  depletionDate?: string;
+  projectedSurplus?: number;
+  surplusHorizonDays?: number;
+}
+
+// Feature 5: Light Gamification
+export interface Achievement {
+  id: string;                     // 'first_tx', 'streak_7', etc.
+  type: string;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt: number;
+  userId?: string;                // Multi-user forward compatibility
+}
+
+export interface GamificationStreaks {
+  currentLoggingStreak: number;
+  longestLoggingStreak: number;
+  currentNoOverspendStreak: number;
+  longestNoOverspendStreak: number;
+  lastLoggedDate?: string;
+}
+
 
 

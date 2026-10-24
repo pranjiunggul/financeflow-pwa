@@ -134,6 +134,13 @@ export async function buildLocalSyncPayload(lastSyncedAt: number = 0): Promise<{
   const aiProviders = await db.ai_providers.toArray();
   const aiKeys = await db.ai_keys.toArray();
   const aiPriorities = await db.ai_priorities.toArray();
+  const financialGoals = await db.financial_goals.toArray();
+  const investmentAssets = await db.investment_assets.toArray();
+  const assetValuations = await db.asset_valuations.toArray();
+  const achievements = await db.achievements.toArray();
+  const subscriptionPatterns = await db.subscription_patterns.toArray();
+  const aiChatSessions = await db.ai_chat_sessions.toArray();
+  const receiptAttachments = await db.receipt_attachments.toArray();
 
   const totalLocalCount =
     (await db.accounts.count()) +
@@ -161,6 +168,13 @@ export async function buildLocalSyncPayload(lastSyncedAt: number = 0): Promise<{
       ai_providers: aiProviders,
       ai_keys: aiKeys,
       ai_priorities: aiPriorities,
+      financial_goals: financialGoals,
+      investment_assets: investmentAssets,
+      asset_valuations: assetValuations,
+      achievements,
+      subscription_patterns: subscriptionPatterns,
+      ai_chat_sessions: aiChatSessions,
+      receipt_attachments: receiptAttachments,
     },
   };
 
@@ -353,6 +367,48 @@ export async function mergeRemoteSyncPayload(
     for (const p of remotePayload.tables.ai_priorities) {
       await db.ai_priorities.put(p);
       mergedCount++;
+    }
+  }
+
+  // Merge Financial Goals
+  if (remotePayload.tables.financial_goals?.length) {
+    for (const g of remotePayload.tables.financial_goals) {
+      const existing = await db.financial_goals.get(g.id);
+      if (!existing || (g.updatedAt || 0) > (existing.updatedAt || 0)) {
+        await db.financial_goals.put(g);
+        mergedCount++;
+      }
+    }
+  }
+
+  // Merge Investment Assets & Valuations
+  if (remotePayload.tables.investment_assets?.length) {
+    for (const a of remotePayload.tables.investment_assets) {
+      const existing = await db.investment_assets.get(a.id);
+      if (!existing || (a.updatedAt || 0) > (existing.updatedAt || 0)) {
+        await db.investment_assets.put(a);
+        mergedCount++;
+      }
+    }
+  }
+  if (remotePayload.tables.asset_valuations?.length) {
+    for (const v of remotePayload.tables.asset_valuations) {
+      const existing = await db.asset_valuations.get(v.id);
+      if (!existing) {
+        await db.asset_valuations.put(v);
+        mergedCount++;
+      }
+    }
+  }
+
+  // Merge Achievements
+  if (remotePayload.tables.achievements?.length) {
+    for (const ach of remotePayload.tables.achievements) {
+      const existing = await db.achievements.get(ach.id);
+      if (!existing) {
+        await db.achievements.put(ach);
+        mergedCount++;
+      }
     }
   }
 
