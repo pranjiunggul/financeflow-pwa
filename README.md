@@ -1,212 +1,131 @@
-# FinanceFlow 🪙
+> [!NOTE]
+> **Bilingual Documentation / Dokumentasi Dwibahasa**
+> - Baca dokumentasi ini dalam **Bahasa Indonesia**: [README.id.md](file:///c:/Personal%20Finance/README.id.md)
+> - Panduan Instalasi Lengkap: [INSTALLATION.md](file:///c:/Personal%20Finance/INSTALLATION.md) | [INSTALLATION.id.md](file:///c:/Personal%20Finance/INSTALLATION.id.md)
+> - Panduan Pengguna (User Guide): [TUTORIAL.md](file:///c:/Personal%20Finance/TUTORIAL.md) (ID) | [TUTORIAL.en.md](file:///c:/Personal%20Finance/TUTORIAL.en.md) (EN)
 
-> **Privacy-First, Offline-First, Zero-Knowledge Personal Finance PWA**  
-> Built with modern web standards, authenticated end-to-end encryption, multi-currency ledger math, local deterministic intelligence, and an extensible multi-provider AI copilot.
+# FinanceFlow — Smart, Offline-First Personal Finance PWA
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Bundle Size](https://img.shields.io/badge/Initial%20Load-259%20kB%20gzip-emerald)](ARCHITECTURE.md#performance--bundle-budget)
-[![Test Suite](https://img.shields.io/badge/Test%20Suites-8%2F8%20Passing%20(100%25)-success)](tests/)
-[![Security](https://img.shields.io/badge/Encryption-AES--GCM--256%20%2B%20PBKDF2-indigo)](ARCHITECTURE.md#encryption--security-architecture)
+FinanceFlow is a privacy-first, offline-capable Progressive Web Application (PWA) designed to track personal finances, cash flow, investments, savings goals, and tax liabilities with zero vendor lock-in. 
 
----
-
-## Table of Contents
-
-- [Overview & Philosophy](#overview--philosophy)
-- [Comprehensive Feature Matrix](#comprehensive-feature-matrix)
-- [Tech Stack](#tech-stack)
-- [Quick Start & Installation](#quick-start--installation)
-- [Project Documentation](#project-documentation)
-- [Architecture & Performance Highlights](#architecture--performance-highlights)
-- [License & Contributions](#license--contributions)
+It combines reactive client-side database storage (Dexie.js / IndexedDB), multi-modal transaction entry (voice, receipt OCR, AI chat, Telegram bot), resilient multi-provider AI parsing (Groq, Google Gemini, OpenRouter), and seamless cloud sync via Google Drive's hidden `appDataFolder`.
 
 ---
 
-## Overview & Philosophy
+## Key Capabilities & Features
 
-**FinanceFlow** is a Progressive Web Application (PWA) designed for individuals, freelancers, and privacy-conscious users who want institutional-grade financial tracking without handing their banking data or ledger history to third-party cloud servers.
+### 1. Multi-Modal Transaction Ingestion
+- **Quick-Add**: Rapid inline entry with keyboard shortcuts, auto-categorization, and transfer shortcuts.
+- **Smart AI Chat Assistant**: Conversational logging in natural Indonesian or English (e.g., *"Makan siang 35rb di warteg bca"*), powered by a 3-tier failover engine (Groq, Gemini, OpenRouter).
+- **Receipt OCR & Bulk History Extraction**: Powered by Tesseract.js and multimodal Gemini. Parse physical receipts or bulk bank transfer screenshot history in one batch.
+- **Voice Input**: Web Speech API integration with explicit privacy consent, Indonesian language support, and intelligent AI intent extraction.
+- **Telegram Bot Inbox**: Record transactions on the move via a private Telegram bot; messages are buffered via an edge relay worker (`financeflow-relay` using Cloudflare KV) with PIN-based end-to-end payload encryption.
 
-Traditional finance applications force users into a compromise: either accept full privacy invasion by syncing plain financial records to proprietary backends, or use clunky offline spreadsheets that lack automation, analytics, and intelligent copilot assistance. 
+### 2. Indonesian Personal Income Tax (PPh) Estimator
+- **Dual-Ledger Tracking**: Separates **Gross Taxable Income** from **Net Cash Received**, ensuring accurate bank reconciliation without under-reporting taxable revenue.
+- **Preset Platform Treatments**:
+  - *Tax Withheld at Source*: Logs withholding tax credits (e.g. Shopee Affiliate PPh 21 Bukti Potong).
+  - *Not Yet Withheld*: Tracks gross income requiring self-calculation (e.g. TikTok Affiliate, direct freelance).
+  - *Non-Taxable / Excluded*: Internal transfers, reimbursements, gifts.
+- **Configurable Tax Rules**:
+  - Single-PTKP rule across employment and side income.
+  - Configurable PTKP brackets: TK/0 (Rp 54M) through K/3 (Rp 72M).
+  - Progressive PPh 21 tax brackets (5% up to 35% above Rp 5B).
+  - Dedicated field for primary employer salary already taxed via corporate payroll.
+  - Persistent non-official estimation disclaimer.
 
-FinanceFlow eliminates this compromise through five foundational principles:
+### 3. Financial Goals (Savings Goals) & Velocity
+- **Smart Progress Tracking**: Real-time progress bars comparing current vs. target amounts.
+- **90-Day Velocity Projections**: Dynamically calculates projected completion dates based on the user's actual 90-day net saving velocity, rather than unrealistic linear timelines.
+- **Dual Tracking Modes**:
+  - *Dedicated Account Mode*: Progress tracked automatically against balance growth in a dedicated savings account.
+  - *Manual Contribution Mode*: Progress tracked via explicit goal deposits (recommended for multi-purpose accounts).
 
-1. **Client-Side-Only & Zero-Knowledge**: No user ledger data, credentials, or API keys ever touch an unauthenticated central server. All data lives in your browser's IndexedDB, encrypted at rest using AES-GCM-256 with keys derived from your PIN via PBKDF2 (600,000 rounds).
-2. **True Offline-First Architecture**: The application installs as a PWA, runs without an internet connection, and features a deterministic offline natural language intelligence engine that parses everyday transaction input and colloquial slang without needing an LLM.
-3. **Double-Entry Ledger Integrity**: Every balance update, account transfer with bank fees, debt repayment, and recurring rule is tracked with atomic balance reconciliation, soft deletes, and full change audit trails.
-4. **Zero-Write AI Safety Gate**: The unified AI copilot and receipt OCR engine utilize internal function calling to propose changes as visual diff cards—nothing is ever committed to your ledger without your explicit approval.
-5. **Decoupled Cloud Sync & Extensible AI**: Sync seamlessly across devices using your own Google Drive `appDataFolder` (as authenticated ciphertext), and connect to any AI provider of your choice (DeepSeek, OpenRouter, Gemini, Groq, Claude, OpenAI, Mistral, Local Ollama, or self-hosted LM Studio/vLLM) with automatic priority failover and background health monitoring.
+### 4. Investment & Non-Cash Asset Tracking
+- **Multi-Asset Portfolio**: Dedicated tracking for Stocks, Mutual Funds, Crypto, Gold/Precious Metals, and Real Estate/Property.
+- **Hybrid Valuation**:
+  - Periodic manual valuation entries with full historical valuation logs.
+  - Optional live auto-fetch for major cryptocurrencies via public CoinGecko API.
+- **Net Worth Integration**: Computes true total net worth (Liquid Cash + Investments - Outstanding Debts).
 
----
+### 5. Cash Flow Forecasting
+- **3 to 6-Month Projections**: Daily balance projections combining current account balances, recurring bills, active debt amortization, and discretionary spending velocity.
+- **Depletion Alerts**: Flags the exact projected date when any account or total liquid balance risks depletion below zero.
+- **Safe-to-Spend Metric**: Daily allowance calculated after reserving upcoming fixed obligations and debt payments.
 
-## Comprehensive Feature Matrix
+### 6. Cloud Sync & Multi-Device Harmony
+- **Private Google Drive Sync**: Stores encrypted backups inside the hidden `appDataFolder` (`drive.appdata` scope), invisible in standard Drive UI.
+- **Device Identity & Account Lock**: Enforces a single approved Google account across all devices to prevent data contamination.
+- **Cross-Device Duplicate Detection**: Intelligent fuzzy matching alerts users to duplicate transactions entered across different offline devices.
+- **Conflict Resolution**: Vector clock and last-write-wins strategy with tombstone deletion support.
 
-### 1. Ledger Engine & Transactions
-- **Atomic Balance Accounting**: High-precision balance maintenance across checking accounts, cash wallets, e-wallets, credit cards, and investments.
-- **Account Transfers with Fees**: Single-action transfers that debit the source account, credit the destination account, and record optional transfer fees into dedicated fee categories without balance drift.
-- **Soft Deletes & Trash Restore**: Non-destructive deletion with full balance recalculation on delete and reversal upon restore.
-- **Category Reassignment Protection**: Deleting a category with active transactions prompts for an explicit replacement category before allowing removal.
-- **Full Audit Trail**: Every insert, update, soft-delete, restore, and sync conflict resolution is permanently recorded in the `audit_logs` table with before-and-after snapshots.
+### 7. Zero-Knowledge Privacy & Data Portability
+- **Client-Side Encryption**: All sensitive data, PINs, and API keys are stored locally in IndexedDB.
+- **Opt-In Anonymous Crash Telemetry**: Diagnostic crash reports submitted to `financeflow-telemetry` worker enforce a strict 7-field technical allow-list with **zero financial data** and 30-day auto-TTL in Cloudflare KV.
+- **Right-to-be-Forgotten**: Two-tier data wipe (local DB reset + Google Drive `appDataFolder` wipe).
+- **Full Data Portability**: Zero-dependency ZIP export containing full JSON database and raw receipt image attachments.
 
-### 2. Multi-Currency Ledger & Live FX Engine
-- **Multi-Currency Accounts**: Hold accounts in IDR, USD, EUR, SGD, GBP, JPY, AUD, MYR, or any standard currency.
-- **Per-Transaction Historical Snapshots**: Transactions freeze their `exchangeRateToBase` and `baseAmount` at the moment of recording, preserving historical accounting accuracy even as global market rates fluctuate.
-- **Live Frankfurter API Sync**: Fetches real-time ECB rates on demand, caches rates in IndexedDB, and automatically computes reverse rates.
-- **Offline Stale-Rate Fallback**: When offline, smoothly falls back to the most recent cached exchange rates with visual stale-rate indicators.
-
-### 3. Debts & Receivables Tracker
-- **Bi-Directional Lifecycle**: Track debts (money you owe to counterparties) and receivables (money others owe to you) through `open` $\to$ `partially_paid` $\to$ `settled` states.
-- **Partial Repayments**: Record installments that automatically update the debtor's remaining balance and adjust your cash/bank balances.
-- **Directionality Disambiguation**: Natural language parser accurately distinguishes borrowing ("aku pinjem budi") from lending ("budi pinjem aku", "pinjemin budi") with an explicit 1-tap direction switch banner on proposals.
-
-### 4. Recurring Rules & Automated Bank Fees
-- **Rule Engine**: Schedule recurring expenses, income, or transfers across Daily, Weekly, Bi-weekly, Monthly, or Yearly frequencies with customizable intervals.
-- **Auto-Post vs. Reminder**: Configure rules to post automatically on their execution date or prompt the user for confirmation.
-- **Bank Administration Fee Engine**: Define per-account monthly maintenance fees (e.g., 15,000 IDR every 25th of the month) that automatically post on due dates.
-
-### 5. Analytics Dashboard & Multi-Format Export
-- **Financial Analytics**: 6-month cash flow bar charts, expense category distribution donuts, and historical net worth progression.
-- **Budget Performance & Overrun Alerts**: Real-time monthly category budget tracking with visual status indicators (Green $<80\%$, Yellow $80\text{--}99\%$, Red $\ge 100\%$).
-- **Month-End Burn Rate Projection**: Predicts end-of-month spend based on current daily spending velocity.
-- **3-Sheet Excel Workbook Export**: Clean, standalone XML SpreadsheetML workbook containing separate sheets for `Transactions`, `Accounts`, and `Debts & Receivables`.
-- **CSV Data Portability**: Standard CSV exports and imports for accounting software compatibility.
-
-### 6. Security, Encryption & Privacy
-- **Web Crypto AES-GCM-256**: Authenticated encryption for all remote sync payloads, local backups, and stored AI API keys.
-- **PBKDF2 Key Derivation**: 600,000 SHA-256 rounds with unique 16-byte random salts.
-- **App Lock & Inactivity Timer**: PIN-based lock screen with optional WebAuthn biometric unlock (FaceID / Fingerprint) and configurable auto-lock timeouts.
-- **Zero-Knowledge API Key Storage**: Hard PIN prerequisite before any key can be saved; keys are stored encrypted at rest, masked in the UI (`sk-...4f8b`), with best-effort in-memory clearing upon revelation.
-
-### 7. Google Drive Sync & Rolling Dual Backup Engine
-- **Zero-SDK REST v3 Sync**: Communicates directly with Google Drive API v3 via standard multipart requests without bloated third-party SDKs.
-- **Hidden AppData Folder**: Stores sync files in Google Drive's sandboxed `appDataFolder` where they cannot be accidentally moved or deleted.
-- **Last-Write-Wins (LWW) Conflict Engine**: Resolves simultaneous edits across devices while recording superseded versions in the local audit log.
-- **Rolling Dual Backup Policy**: Automatically retains 7 daily backups and 4 weekly backups (Sunday snapshots) in local OPFS / IndexedDB, with manual export/import of `.ffbackup` files.
-
-### 8. Unified AI Copilot & Internal Tool Calling
-- **Single Natural Language Interface**: Chat interface capable of recording transactions, editing/deleting records, searching transaction history, answering budget questions, and evaluating financial health.
-- **Internal Tool Calling Schema**: Powered by structured tools (`searchTransactions`, `createTransactionProposal`, `editTransactionProposal`, `deleteTransactionProposal`, `getFinancialSummary`, `getBudgetStatus`, `getAccountsAndBalances`, `getDebtsOverview`).
-- **Zero-Write Safety Gate**: AI mutating actions generate visual `ActionProposalCard` diff cards displaying before-and-after states; data is never written to disk without explicit user approval.
-- **Serving Badges & Rollover Traces**: Every assistant response displays the exact serving provider/model (e.g., `⚡ via DeepSeek (deepseek-chat)`) and highlights any failover events.
-
-### 9. Lazy OCR Receipt Scanner
-- **Dynamic Code-Splitting**: Tesseract.js is isolated in an on-demand bundle chunk (6.83 kB gzip) and is only downloaded when the user opens the camera or uploads a receipt.
-- **HTML5 Canvas Preprocessing**: Client-side grayscale conversion, high-contrast thresholding, and luminance normalization for receipt text extraction.
-- **SHA-256 Duplicate Receipt Fingerprinting**: Computes cryptographic hashes of scanned receipts to prevent duplicate expense claims.
-
-### 10. Zero-Knowledge Telegram Ingestion Bridge
-- **Option A (Cloudflare Worker Relay)**: Stateless serverless relay ([`worker/telegram-relay.ts`](file:///c:/Personal%20Finance/worker/telegram-relay.ts)) verifying webhook signatures and queueing raw encrypted payloads to Google Drive without holding user API keys or running OCR server-side.
-- **Option B (Desktop Long-Polling Daemon)**: Local Node.js daemon ([`scripts/telegram-daemon.ts`](file:///c:/Personal%20Finance/scripts/telegram-daemon.ts)) pulling updates directly to local IndexedDB with zero public endpoints or tunnels required.
-- **Review Tray & Batch Ingestion**: [`TelegramInboxModal.tsx`](file:///c:/Personal%20Finance/src/components/telegram/TelegramInboxModal.tsx) allows users to review inbound text and photos, execute client-side AI/OCR parsing, and commit items individually or in batches.
-
-### 11. Major Offline Intelligence Engine (Phase 7)
-- **100% Deterministic Local Logic**: Fully functional transaction parsing, keyword search, report generation, and financial advice with no internet connection, no API keys, and no local LLMs.
-- **Indonesian Slang Numbers**: Full vocabulary of Hokkien/regional monetary terms (`seceng`, `goceng`, `ceban`, `noban`, `nobango`, `gocap`, `cepek`, `cepek ceng`, `pekgo`, `gopek ceng`, `sejt`, `sejuta`).
-- **1,500+ Chat Abbreviations**: Normalizes Indonesian texting shorthand (`byr`, `bl`, `trf`, `bwt`, `kmrn`, `blm`, `udh`, `smpe`, `pke`, `ongkir`, etc.).
-- **500+ Financial Taxonomy Terms**: Automatic entity and category classification across 20+ Indonesian financial institutions (BCA, Mandiri, BRI, BNI, GoPay, OVO, Dana) and 13 spending categories.
-
-### 12. AI Provider Management & Automatic Failover (Phase 8)
-- **Multi-Provider Configuration**: Pre-seeded presets for **DeepSeek**, **OpenRouter**, **Google Gemini**, **Groq**, **Anthropic (Claude)**, **OpenAI**, **Mistral AI**, and **Local Ollama**.
-- **Generic Custom Provider**: Connect to any OpenAI-compatible endpoint (LM Studio, vLLM, LocalAI) with custom base URLs, auth header formats, and endpoints.
-- **Live Model Synchronization**: Automatically queries live `/models` endpoints upon entering an API key, populating searchable dropdowns with a 1-click "Refresh Models" trigger.
-- **Proactive Background Health Checking**: Background scheduler verifies provider and key availability using lightweight model-listing pings, pausing when the tab is hidden and skipping cloud checks entirely when offline (`navigator.onLine === false`).
-- **Fast-Path Selection & 429 Safety Net**: Directly invokes the highest-priority healthy tier, automatically rolling down the priority chain on rate limits or outages without dropping requests.
-- **Persistent Failure Alerting**: Triggers persistent warning banners in Settings and Dashboard when a provider fails $\ge 3$ consecutive times.
-- **Guaranteed 3-Tier Fallback Order**: User Cloud Priority Chain $\to$ Local Ollama $\to$ Phase 7 Offline Deterministic Engine.
+### 8. Motivation & Gamification
+- **Financial Health Score**: Dynamic 0-100 scoring based on savings rate, budget discipline, emergency fund ratio, and logging consistency.
+- **Streaks & Badges**: Tracks daily logging streaks and unlocks achievement badges.
+- **FinanceFlow Wrapped**: Spotify-style interactive month/year-in-review visual slides.
 
 ---
 
-## Tech Stack
+## Technical Architecture & Stack
 
-| Layer | Technology | Purpose |
-|---|---|---|
-| **Framework & UI** | [React 19](https://react.dev/) + [TypeScript 5.7](https://www.typescriptlang.org/) | Type-safe reactive component tree |
-| **Build & Dev Server** | [Vite 6](https://vitejs.dev/) | Sub-second HMR and Rollup production bundling |
-| **Styling & Icons** | [Tailwind CSS 3.4](https://tailwindcss.com/) + [Lucide React](https://lucide.dev/) | Responsive dark-mode styling and UI iconography |
-| **Local Database** | [Dexie.js 4.0](https://dexie.org/) (IndexedDB wrapper) | Client-side persistent reactive relational database |
-| **Cryptography** | Web Crypto API (`window.crypto.subtle`) | Native AES-GCM-256 and PBKDF2 (600,000 iterations) |
-| **PWA & Offline** | [vite-plugin-pwa 0.21](https://vite-pwa-org.netlify.app/) + Workbox | Service Worker, web manifest, offline asset caching |
-| **Data Visualizations** | [Chart.js 4.6](https://www.chartjs.org/) + [react-chartjs-2](https://react-chartjs-2.js.org/) | Canvas charts (Cash flow bars, Net worth, Category donuts) |
-| **On-Demand OCR** | [Tesseract.js 7.0](https://tesseract.projectnaptha.com/) | Isolated lazy-loaded optical character recognition |
-| **Cloud Sync** | Google Drive REST API v3 (Multipart) | Zero-SDK encrypted appDataFolder replication |
-| **Test Engine** | [tsx](https://github.com/privatenumber/tsx) + [fake-indexeddb](https://github.com/dumbmatter/fakeIndexedDB) | In-memory integration testing across all 8 phases |
+| Layer | Technology | Description |
+| :--- | :--- | :--- |
+| **Frontend Framework** | React 19 + TypeScript 5.7 | Modern component architecture, functional hooks |
+| **Styling & Icons** | Tailwind CSS 3.4 + Lucide React | Clean, responsive design with dark mode aesthetic |
+| **Client Database** | Dexie.js 4.0 (IndexedDB) | Reactive IndexedDB with **Schema v8** (23 tables) |
+| **Build & PWA** | Vite 6 + `vite-plugin-pwa` | Instant HMR, offline service worker, PWA installable |
+| **Edge Compute** | Cloudflare Workers & Pages | Edge hosting and serverless relays |
+| **Edge Storage** | Cloudflare KV | `INBOX_KV` (Telegram relay) & `CRASH_REPORTS_KV` (telemetry) |
+| **Cloud Sync** | Google Drive API v3 | Restricted `appDataFolder` scoped synchronization |
+| **AI Inference** | Groq, Gemini, OpenRouter | 3-tier fallback engine with token rate-limiting & failover |
+| **Local OCR** | Tesseract.js | In-browser client-side OCR for offline receipt parsing |
+| **Automated Testing** | `tsx` + `fake-indexeddb` | 27 integration test suites |
 
 ---
 
-## Quick Start & Installation
+## Documentation Index
 
-### Prerequisites
-- [Node.js](https://nodejs.org/) v18.0.0 or higher
-- [npm](https://www.npmjs.com/) v9.0.0 or higher
+Explore the comprehensive bilingual documentation suite:
 
-### 1. Clone the Repository
+| Document | English Version | Indonesian Version (Bahasa) |
+| :--- | :--- | :--- |
+| **Installation & Deployment** | [INSTALLATION.md](file:///c:/Personal%20Finance/INSTALLATION.md) | [INSTALLATION.id.md](file:///c:/Personal%20Finance/INSTALLATION.id.md) |
+| **User Guide & Tutorial** | [TUTORIAL.en.md](file:///c:/Personal%20Finance/TUTORIAL.en.md) | [TUTORIAL.md](file:///c:/Personal%20Finance/TUTORIAL.md) |
+| **System Architecture** | [ARCHITECTURE.md](file:///c:/Personal%20Finance/ARCHITECTURE.md) | [ARCHITECTURE.id.md](file:///c:/Personal%20Finance/ARCHITECTURE.id.md) |
+| **Network & Deployment Topology** | [TOPOLOGY.md](file:///c:/Personal%20Finance/TOPOLOGY.md) | [TOPOLOGY.id.md](file:///c:/Personal%20Finance/TOPOLOGY.id.md) |
+
+---
+
+## Quick Start (Local Development)
+
 ```bash
+# 1. Clone repository
 git clone https://github.com/your-username/financeflow.git
 cd financeflow
-```
 
-### 2. Install Dependencies
-```bash
+# 2. Install dependencies (no .env required!)
 npm install
-```
 
-### 3. Run Development Server
-```bash
+# 3. Run development server
 npm run dev
-```
-Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-### 4. Run Automated Test Suite
-FinanceFlow includes automated integration tests covering all 8 phases:
-```bash
+# 4. Run test suites (27 integration tests)
 npm test
-```
-*(On Windows PowerShell, if script execution policy is restricted, use `powershell -ExecutionPolicy Bypass -Command "npm test"`).*
 
-### 5. Production Build
-Type-checks TypeScript and compiles production assets:
-```bash
+# 5. Build production bundle
 npm run build
 ```
 
-### 6. Preview Production PWA
-```bash
-npm run preview
-```
+See [INSTALLATION.md](file:///c:/Personal%20Finance/INSTALLATION.md) for full deployment instructions for Google Drive Sync, Cloudflare Workers, and Telegram Bot setup.
 
 ---
 
-## Project Documentation
+## License
 
-Detailed architecture, deployment topology, and end-user usage guides are available in the repository root:
-
-- 📐 [**ARCHITECTURE.md**](ARCHITECTURE.md) — Comprehensive system architecture, Dexie schema v4, encryption engine, conflict resolution, offline intelligence pipeline, and chunk size metrics.
-- 🌐 [**TOPOLOGY.md**](TOPOLOGY.md) — Network topology diagrams, execution boundaries, data flow matrices, and online vs. offline capability breakdowns.
-- 📖 [**TUTORIAL.md**](TUTORIAL.md) — Step-by-step user guide written for non-developers, covering account setup, conversational transaction entry, receipt scanning, Google Drive sync, AI failover configuration, and FAQ.
-
----
-
-## Architecture & Performance Highlights
-
-### Performance & Bundle Budget
-
-FinanceFlow enforces an initial page load budget of **$< 300\text{ kB}$ gzip**:
-
-| Bundle Chunk | Raw Size | Gzip Size | Loading Trigger |
-|---|---|---|---|
-| `dist/index.html` | 1.56 kB | 0.74 kB | Initial page load |
-| `assets/index-*.css` | 44.13 kB | 7.76 kB | Initial page load |
-| `assets/vendor-react-*.js` | 4.21 kB | 1.58 kB | Initial page load |
-| `assets/vendor-db-*.js` | 106.37 kB | 35.90 kB | Initial page load |
-| `assets/vendor-charts-*.js` | 187.61 kB | 65.56 kB | Initial page load |
-| `assets/index-*.js` (Main App) | 558.17 kB | 147.57 kB | Initial page load |
-| **Total Initial Load** | **902.05 kB** | **259.11 kB** | **Budget: < 300 kB (40.89 kB Headroom)** |
-| `assets/engine-*.js` | 29.25 kB | 10.24 kB | **On-Demand**: Only loaded if offline engine runs |
-| `assets/index-*.js` (OCR) | 15.83 kB | 6.83 kB | **On-Demand**: Only loaded if receipt camera opens |
-
----
-
-## License & Contributions
-
-FinanceFlow is open-source software licensed under the [MIT License](LICENSE).
-
-Contributions, bug reports, and pull requests are welcome. For major architectural enhancements, please review [ARCHITECTURE.md](ARCHITECTURE.md) and open an issue for discussion first.
+This project is licensed under the MIT License — see the LICENSE file for details.
