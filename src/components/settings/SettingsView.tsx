@@ -16,8 +16,19 @@ import {
   FolderArchive,
   Globe,
   Sparkles,
+  Laptop,
+  Tablet,
+  Edit2,
+  Check,
 } from 'lucide-react';
-import type { AppSettings, CurrencyCode, LocalBackupMetadata, SyncConflictRecord } from '../../types';
+import type {
+  AppSettings,
+  CurrencyCode,
+  LocalBackupMetadata,
+  SyncConflictRecord,
+  SyncDuplicatePair,
+  ConnectedDeviceInfo,
+} from '../../types';
 import { db } from '../../db/database';
 import { useTranslation } from '../../i18n';
 import { recalculateAllAccountBalances } from '../../services/ledger';
@@ -30,7 +41,9 @@ import {
 import {
   performGoogleDriveSync,
   getRecentConflicts,
+  getRecentDuplicates,
   subscribeToSyncStatus,
+  changeApprovedGoogleAccount,
   type SyncStatus,
 } from '../../services/sync';
 import {
@@ -38,6 +51,8 @@ import {
   fetchGoogleProfile,
   setCachedAccessToken,
 } from '../../services/gdrive';
+import { getLocalDeviceInfo, updateLocalDeviceName } from '../../services/device';
+import { getPendingDuplicatePairs } from '../../services/syncDuplicates';
 import { ConflictReviewModal } from '../sync/ConflictReviewModal';
 import { AIProviderManager } from './AIProviderManager';
 import { TelegramSettings } from './TelegramSettings';
@@ -96,9 +111,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const [dailyBackupEnabled, setDailyBackupEnabled] = useState(settings?.dailyBackupEnabled !== false);
   const [localBackups, setLocalBackups] = useState<LocalBackupMetadata[]>([]);
   const [conflicts, setConflicts] = useState<SyncConflictRecord[]>([]);
+  const [duplicates, setDuplicates] = useState<SyncDuplicatePair[]>([]);
   const [showConflictModal, setShowConflictModal] = useState(false);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle');
   const [syncMessage, setSyncMessage] = useState('');
+
+  // Connected Devices state
+  const [localDevice, setLocalDevice] = useState<ConnectedDeviceInfo | null>(null);
+  const [isRenamingDevice, setIsRenamingDevice] = useState(false);
+  const [newDeviceName, setNewDeviceName] = useState('');
 
   // Keep driveClientId in sync with settings
   useEffect(() => {
@@ -107,13 +128,20 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     }
   }, [settings?.googleDriveClientId]);
 
-  // Load local backups and subscribe to sync status
+  // Load local backups, devices, pending duplicates, and subscribe to sync status
   useEffect(() => {
     loadBackups();
-    const unsubscribe = subscribeToSyncStatus((status, msg, recentConflicts) => {
+    getLocalDeviceInfo().then((dev) => {
+      setLocalDevice(dev);
+      setNewDeviceName(dev.deviceName);
+    });
+    getPendingDuplicatePairs().then(setDuplicates);
+
+    const unsubscribe = subscribeToSyncStatus((status, msg, recentConflicts, recentDuplicates) => {
       setSyncStatus(status);
       if (msg) setSyncMessage(msg);
       if (recentConflicts) setConflicts(recentConflicts);
+      if (recentDuplicates) setDuplicates(recentDuplicates);
     });
     return () => unsubscribe();
   }, []);
@@ -181,6 +209,37 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       googleDriveUserEmail: undefined,
     });
     setStatusMessage('Google Drive unlinked.');
+  };
+
+  // Change Approved Google Account (PIN-gated migration flow)
+  const handleChangeApprovedAccount = async () => {
+    const pin = prompt('Enter your master PIN to authorize transferring your approved Google Account:');
+    if (!pin) return;
+
+    setIsSyncing(true);
+    setStatusMessage('');
+    setErrorMessage('');
+
+    try {
+      const res = await changeApprovedGoogleAccount(pin, driveClientId.trim());
+      setStatusMessage(`Approved Google Account successfully changed to ${res.approvedEmail}. Both local vault and cloud manifest updated!`);
+    } catch (err: any) {
+      setErrorMessage(`Failed to change approved account: ${err.message}`);
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  // Save renamed local device
+  const handleSaveDeviceName = async () => {
+    try {
+      const updated = await updateLocalDeviceName(newDeviceName);
+      setLocalDevice(updated);
+      setIsRenamingDevice(false);
+      setStatusMessage(`Device renamed to "${updated.deviceName}".`);
+    } catch (err: any) {
+      setErrorMessage(err.message);
+    }
   };
 
   // Trigger Google Drive Sync
@@ -447,15 +506,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </div>
           ) : (
             <div className="p-4 bg-slate-950/60 border border-slate-800 rounded-2xl space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                <div>
-                  <span className="text-slate-400">Account: </span>
-                  <span className="text-white font-bold">{settings.googleDriveUserEmail || 'Linked'}</span>
+              {/* Approved Google Account Lock Status */}
+              <div className="flex flex-wrap items-center justify-between p-3 rounded-xl bg-slate-900 border border-slate-800 gap-2">
+                <div className="flex items-center space-x-2.5">
+                  <div className="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-400">
+                    <Shield className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] font-semibold text-slate-400 flex items-center space-x-1.5">
+                      <span>Approved Google Account</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500/20 text-emerald-300">
+                        🔒 Locked
+                      </span>
+                    </div>
+                    <div className="text-xs font-mono text-white font-semibold">
+                      {settings.approvedGoogleEmail || settings.googleDriveUserEmail || 'Canonical Vault Account'}
+                    </div>
+                  </div>
                 </div>
+
                 <div className="flex items-center space-x-2">
-                  <span className="text-slate-400">State: </span>
+                  <button
+                    onClick={handleChangeApprovedAccount}
+                    className="px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition"
+                    title="Authorize changing approved Google Account with Master PIN"
+                  >
+                    Change Account
+                  </button>
+                  <button
+                    onClick={handleDisconnectDrive}
+                    className="px-2.5 py-1 text-xs bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/30 rounded-lg transition"
+                  >
+                    Disconnect
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <div className="flex items-center space-x-2">
+                  <span className="text-slate-400">Sync State: </span>
                   <span className={`font-bold uppercase tracking-wider text-[10px] px-2 py-0.5 rounded ${
-                    syncStatus === 'error' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-slate-800 text-slate-300'
+                    syncStatus === 'error'
+                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
+                      : syncStatus === 'duplicate_detected'
+                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      : 'bg-slate-800 text-slate-300'
                   }`}>
                     {syncStatus}
                   </span>
@@ -485,13 +580,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   <span>{isSyncing ? t('settings.syncing') : t('settings.syncNow')}</span>
                 </button>
 
-                {conflicts.length > 0 && (
+                {(conflicts.length > 0 || duplicates.length > 0) && (
                   <button
                     onClick={() => setShowConflictModal(true)}
                     className="flex items-center space-x-1.5 px-3 py-2 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-xl text-xs font-bold hover:bg-amber-500/30 transition"
                   >
                     <AlertTriangle className="w-3.5 h-3.5" />
-                    <span>Review {conflicts.length} Conflict(s)</span>
+                    <span>
+                      Review {conflicts.length > 0 ? `${conflicts.length} Conflict(s)` : ''}
+                      {conflicts.length > 0 && duplicates.length > 0 ? ' & ' : ''}
+                      {duplicates.length > 0 ? `${duplicates.length} Duplicate(s)` : ''}
+                    </span>
                   </button>
                 )}
 
@@ -717,26 +816,156 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         onOpenTelegramInbox={onOpenTelegramInbox}
       />
 
-      {/* Device & Diagnostics Info */}
-      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800/80 space-y-3">
-        <h3 className="text-base font-bold text-white flex items-center space-x-2">
-          <Smartphone className="w-5 h-5 text-slate-400" />
-          <span>Device Identification</span>
-        </h3>
-        <div className="space-y-1 text-xs text-slate-400 font-mono">
-          <div>Device ID: <span className="text-white">{settings?.deviceId || 'dev_local'}</span></div>
-          <div>Browser Platform: <span className="text-white">{typeof navigator !== 'undefined' ? navigator.platform : 'Node'}</span></div>
-          <div>PWA Engine: <span className="text-white">Vite 6 + React 19 + Dexie.js v4</span></div>
+      {/* Connected Devices (Single-User Multi-Device Sync Tracking) */}
+      <div className="p-6 rounded-3xl bg-slate-900 border border-slate-800/80 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400">
+              <Laptop className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Connected Devices</h3>
+              <p className="text-xs text-slate-400">
+                Single-user multi-device tracking. Displays all devices synchronized with your Google Drive vault.
+              </p>
+            </div>
+          </div>
         </div>
+
+        {/* This Device (Current Session) */}
+        <div className="p-4 rounded-2xl bg-indigo-950/20 border border-indigo-500/30 space-y-3">
+          <div className="flex items-start justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="p-2 rounded-xl bg-indigo-500/20 text-indigo-300">
+                {localDevice?.deviceType === 'mobile' ? (
+                  <Smartphone className="w-5 h-5" />
+                ) : localDevice?.deviceType === 'tablet' ? (
+                  <Tablet className="w-5 h-5" />
+                ) : (
+                  <Laptop className="w-5 h-5" />
+                )}
+              </div>
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm font-bold text-white">
+                    {localDevice?.deviceName || settings?.deviceName || 'This Device'}
+                  </span>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-500/40">
+                    This Device (Current Session)
+                  </span>
+                </div>
+                <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                  ID: {localDevice?.deviceId || settings?.deviceId || 'dev_local'} • {localDevice?.osName} ({localDevice?.browserName})
+                </div>
+              </div>
+            </div>
+
+            {!isRenamingDevice && (
+              <button
+                onClick={() => {
+                  setNewDeviceName(localDevice?.deviceName || '');
+                  setIsRenamingDevice(true);
+                }}
+                className="flex items-center space-x-1 px-2.5 py-1 text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded-lg transition"
+              >
+                <Edit2 className="w-3 h-3 text-slate-400" />
+                <span>Rename</span>
+              </button>
+            )}
+          </div>
+
+          {/* Inline Rename Form */}
+          {isRenamingDevice && (
+            <div className="pt-2 border-t border-indigo-500/20 flex items-center space-x-2">
+              <input
+                type="text"
+                value={newDeviceName}
+                onChange={(e) => setNewDeviceName(e.target.value)}
+                placeholder="e.g. My Laptop, Personal Pixel"
+                className="flex-1 px-3 py-1.5 bg-slate-900 border border-indigo-500/40 rounded-xl text-white text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              />
+              <button
+                onClick={handleSaveDeviceName}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold flex items-center space-x-1"
+              >
+                <Check className="w-3.5 h-3.5" />
+                <span>Save</span>
+              </button>
+              <button
+                onClick={() => setIsRenamingDevice(false)}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-400 rounded-xl text-xs font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
+
+          <div className="text-[11px] text-slate-400 flex items-center justify-between pt-1">
+            <span>Last Sync Activity:</span>
+            <span className="font-mono text-emerald-400">
+              {settings?.lastSyncedAt ? new Date(settings.lastSyncedAt).toLocaleString() : 'Not yet synced'}
+            </span>
+          </div>
+        </div>
+
+        {/* Other Connected Devices */}
+        {settings?.connectedDevices && settings.connectedDevices.filter((d) => d.deviceId !== localDevice?.deviceId).length > 0 ? (
+          <div className="space-y-2 pt-2">
+            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
+              Other Synced Devices ({settings.connectedDevices.filter((d) => d.deviceId !== localDevice?.deviceId).length})
+            </h4>
+            <div className="space-y-2">
+              {settings.connectedDevices
+                .filter((d) => d.deviceId !== localDevice?.deviceId)
+                .map((dev) => (
+                  <div
+                    key={dev.deviceId}
+                    className="p-3 rounded-xl bg-slate-950/60 border border-slate-800 flex items-center justify-between text-xs"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className="p-2 rounded-lg bg-slate-800 text-slate-400">
+                        {dev.deviceType === 'mobile' ? (
+                          <Smartphone className="w-4 h-4" />
+                        ) : dev.deviceType === 'tablet' ? (
+                          <Tablet className="w-4 h-4" />
+                        ) : (
+                          <Laptop className="w-4 h-4" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-white">{dev.deviceName}</div>
+                        <div className="text-[11px] text-slate-500 font-mono">
+                          ID: {dev.deviceId} • {dev.osName || 'OS'} ({dev.browserName || 'Browser'})
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right text-[11px] font-mono text-slate-400">
+                      <div>Last Synced:</div>
+                      <div className="text-slate-300">
+                        {dev.lastSyncAt ? new Date(dev.lastSyncAt).toLocaleDateString() : 'Unknown'}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          </div>
+        ) : (
+          <div className="text-center py-3 text-xs text-slate-500">
+            No other devices recorded. Syncing from your mobile phone or other computers will display them here.
+          </div>
+        )}
       </div>
 
-      {/* Conflict Review Modal */}
+      {/* Conflict & Duplicate Review Modal */}
       {showConflictModal && (
         <ConflictReviewModal
           conflicts={conflicts}
+          duplicates={duplicates}
           onClose={() => setShowConflictModal(false)}
           onConflictResolved={() => {
             setConflicts(getRecentConflicts());
+            setDuplicates(getRecentDuplicates());
+            getPendingDuplicatePairs().then(setDuplicates);
           }}
         />
       )}

@@ -33,6 +33,7 @@ export class FinanceDatabase extends Dexie {
   ai_keys!: Table<AIKeyRecord, string>;
   ai_priorities!: Table<AIPriorityItem, string>;
   ai_failure_alerts!: Table<AIPersistentAlert, string>;
+  sync_duplicates!: Table<import('../types').SyncDuplicatePair, string>;
 
   constructor() {
     super('FinanceFlowDB');
@@ -63,24 +64,36 @@ export class FinanceDatabase extends Dexie {
       ai_priorities: 'id, providerId, keyId, order, isEnabled',
       ai_failure_alerts: 'id, providerId, keyId, dismissed, timestamp',
     });
+
+    this.version(5).stores({
+      sync_duplicates: 'id, status, detectedAt',
+    });
   }
 }
 
 export const db = new FinanceDatabase();
 
 // Device ID Generator & Retriever (Universal Node/Browser safe)
+let inMemoryDeviceId: string | null = null;
+
 export function getOrCreateDeviceId(): string {
+  if (inMemoryDeviceId) return inMemoryDeviceId;
   const STORAGE_KEY = 'financeflow_device_id';
   let deviceId: string | null = null;
   if (typeof localStorage !== 'undefined') {
-    deviceId = localStorage.getItem(STORAGE_KEY);
+    try {
+      deviceId = localStorage.getItem(STORAGE_KEY);
+    } catch {}
   }
   if (!deviceId) {
     deviceId = 'dev_' + crypto.randomUUID().slice(0, 8);
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, deviceId);
+      try {
+        localStorage.setItem(STORAGE_KEY, deviceId);
+      } catch {}
     }
   }
+  inMemoryDeviceId = deviceId;
   return deviceId;
 }
 

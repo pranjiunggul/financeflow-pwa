@@ -187,10 +187,13 @@ export interface AppSettings {
   autoLockMinutes: number;    // 0 = immediately on blur/close
   lastUnlockedAt?: number;
 
-  // Cloud & AI
+  // Google Drive & Account Lock
   googleDriveLinked: boolean;
   googleDriveUserEmail?: string;
   googleDriveClientId?: string;
+  approvedGoogleAccountId?: string;
+  approvedGoogleEmail?: string;
+  connectedDevices?: ConnectedDeviceInfo[];
   lastSyncedAt?: number;
   dailyBackupEnabled: boolean;
   lastLocalBackupAt?: number;
@@ -213,7 +216,20 @@ export interface AppSettings {
   telegramLastActiveAt?: number;
 }
 
-// Phase 4 Sync & Backup Types
+// Phase 4 Sync & Multi-Device Types
+export type DeviceType = 'desktop' | 'mobile' | 'tablet';
+
+export interface ConnectedDeviceInfo {
+  deviceId: string;
+  deviceName: string;
+  deviceType: DeviceType;
+  browserName?: string;
+  osName?: string;
+  firstSeenAt: number;
+  lastSyncAt: number;
+  isCurrentDevice?: boolean;
+}
+
 export interface SyncManifest {
   manifestVersion: number;
   deviceId: string;
@@ -223,6 +239,9 @@ export interface SyncManifest {
   activeRevisionId: string;
   totalRecordsCount: number;
   updatedAt: number;
+  approvedAccountId?: string;
+  approvedAccountEmail?: string;
+  devices?: ConnectedDeviceInfo[];
 }
 
 export interface SyncPayloadData {
@@ -230,6 +249,9 @@ export interface SyncPayloadData {
   deviceName: string;
   timestamp: number;
   schemaVersion: number;
+  approvedAccountId?: string;
+  approvedAccountEmail?: string;
+  devices?: ConnectedDeviceInfo[];
   tables: {
     accounts?: Account[];
     categories?: Category[];
@@ -254,6 +276,18 @@ export interface SyncConflictRecord {
   supersededVersion: any;
   resolvedAt: number;
   reason: string;
+}
+
+export interface SyncDuplicatePair {
+  id: string;
+  localTransactionId: string;
+  remoteTransactionId: string;
+  localTransactionSnapshot: Transaction;
+  remoteTransactionSnapshot: Transaction;
+  detectedAt: number;
+  status: 'pending' | 'resolved_keep_local' | 'resolved_keep_remote' | 'resolved_keep_both';
+  reason: string;
+  similarityScore: number;
 }
 
 export interface LocalBackupMetadata {

@@ -11,45 +11,70 @@ import {
   downloadEncryptedSyncFromDrive,
   getCachedAccessToken,
   requestGoogleDriveAuth,
+  fetchGoogleProfile,
 } from './gdrive';
 import { recalculateAllAccountBalances } from './ledger';
+import { getLocalDeviceInfo, aggregateDevicesList } from './device';
+import { detectCrossDeviceDuplicates } from './syncDuplicates';
 import type {
   SyncManifest,
   SyncPayloadData,
   SyncConflictRecord,
+  SyncDuplicatePair,
 } from '../types';
 
-export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'conflict' | 'error' | 'offline';
+export type SyncStatus = 'idle' | 'syncing' | 'synced' | 'conflict' | 'duplicate_detected' | 'error' | 'offline';
 
-type SyncListener = (status: SyncStatus, message?: string, conflicts?: SyncConflictRecord[]) => void;
+type SyncListener = (
+  status: SyncStatus,
+  message?: string,
+  conflicts?: SyncConflictRecord[],
+  duplicates?: SyncDuplicatePair[]
+) => void;
 const listeners = new Set<SyncListener>();
 
 let currentStatus: SyncStatus = 'idle';
 let lastSyncMessage: string = '';
 let recentConflicts: SyncConflictRecord[] = [];
+let recentDuplicates: SyncDuplicatePair[] = [];
 
 export function subscribeToSyncStatus(listener: SyncListener): () => void {
   listeners.add(listener);
-  listener(currentStatus, lastSyncMessage, recentConflicts);
+  listener(currentStatus, lastSyncMessage, recentConflicts, recentDuplicates);
   return () => {
     listeners.delete(listener);
   };
 }
 
-function notifySyncStatus(status: SyncStatus, message: string = '', conflicts: SyncConflictRecord[] = recentConflicts): void {
+function notifySyncStatus(
+  status: SyncStatus,
+  message: string = '',
+  conflicts: SyncConflictRecord[] = recentConflicts,
+  duplicates: SyncDuplicatePair[] = recentDuplicates
+): void {
   currentStatus = status;
   lastSyncMessage = message;
   recentConflicts = conflicts;
-  listeners.forEach((l) => l(status, message, conflicts));
+  recentDuplicates = duplicates;
+  listeners.forEach((l) => l(status, message, conflicts, duplicates));
 }
 
 export function getRecentConflicts(): SyncConflictRecord[] {
   return [...recentConflicts];
 }
 
+export function getRecentDuplicates(): SyncDuplicatePair[] {
+  return [...recentDuplicates];
+}
+
 export function clearRecentConflicts(): void {
   recentConflicts = [];
-  notifySyncStatus(currentStatus, lastSyncMessage, recentConflicts);
+  notifySyncStatus(currentStatus, lastSyncMessage, recentConflicts, recentDuplicates);
+}
+
+export function clearRecentDuplicates(): void {
+  recentDuplicates = [];
+  notifySyncStatus(currentStatus, lastSyncMessage, recentConflicts, recentDuplicates);
 }
 
 /**
@@ -75,9 +100,12 @@ export async function buildLocalSyncPayload(lastSyncedAt: number = 0): Promise<{
   payload: SyncPayloadData;
   manifest: SyncManifest;
 }> {
-  const deviceId = getOrCreateDeviceId();
+  const localDevice = await getLocalDeviceInfo();
   const settings = await db.settings.get('current');
-  const deviceName = settings?.deviceName || 'FinanceFlow Device';
+  const deviceName = localDevice.deviceName;
+  const deviceId = localDevice.deviceId;
+
+  const aggregatedDevices = aggregateDevicesList(settings?.connectedDevices || [], localDevice);
 
   const accounts = lastSyncedAt > 0
     ? await db.accounts.filter((a) => (a.updatedAt || 0) > lastSyncedAt).toArray()
@@ -120,6 +148,9 @@ export async function buildLocalSyncPayload(lastSyncedAt: number = 0): Promise<{
     deviceName,
     timestamp,
     schemaVersion: 1,
+    approvedAccountId: settings?.approvedGoogleAccountId,
+    approvedAccountEmail: settings?.approvedGoogleEmail,
+    devices: aggregatedDevices,
     tables: {
       accounts,
       categories,
@@ -142,6 +173,9 @@ export async function buildLocalSyncPayload(lastSyncedAt: number = 0): Promise<{
     activeRevisionId: 'rev_' + crypto.randomUUID().slice(0, 8),
     totalRecordsCount: totalLocalCount,
     updatedAt: timestamp,
+    approvedAccountId: settings?.approvedGoogleAccountId,
+    approvedAccountEmail: settings?.approvedGoogleEmail,
+    devices: aggregatedDevices,
   };
 
   return { payload, manifest };
@@ -157,11 +191,15 @@ export async function mergeRemoteSyncPayload(
 ): Promise<{
   mergedCount: number;
   conflicts: SyncConflictRecord[];
+  duplicatePairs: SyncDuplicatePair[];
 }> {
   const localDeviceId = getOrCreateDeviceId();
   const conflicts: SyncConflictRecord[] = [];
   let mergedCount = 0;
   let hasTransactionsUpdated = false;
+
+  // Snapshot existing local transactions before merging to detect cross-device duplicates
+  const existingLocalTransactions = await db.transactions.toArray();
 
   // Helper generic table merger
   async function mergeTable<T extends { id: string; updatedAt?: number; createdAt?: number; isDeleted?: boolean }>(
@@ -327,7 +365,21 @@ export async function mergeRemoteSyncPayload(
     }
   }
 
-  return { mergedCount, conflicts };
+  // Detect cross-device duplicate transaction pairs (without dropping either record)
+  let duplicatePairs: SyncDuplicatePair[] = [];
+  if (remotePayload.tables.transactions && remotePayload.tables.transactions.length > 0) {
+    try {
+      duplicatePairs = await detectCrossDeviceDuplicates(
+        remotePayload.tables.transactions,
+        existingLocalTransactions,
+        localDeviceId
+      );
+    } catch (dupErr) {
+      console.warn('[Sync] Cross-device duplicate detection warning:', dupErr);
+    }
+  }
+
+  return { mergedCount, conflicts, duplicatePairs };
 }
 
 /**
@@ -395,6 +447,7 @@ export async function performGoogleDriveSync(
   success: boolean;
   mergedCount: number;
   conflicts: SyncConflictRecord[];
+  duplicatePairs: SyncDuplicatePair[];
   manifest: SyncManifest;
 }> {
   if (typeof window !== 'undefined' && typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -416,6 +469,22 @@ export async function performGoogleDriveSync(
       accessToken = await requestGoogleDriveAuth(effectiveClientId);
     }
 
+    // Step 0: Profile & Approved Account Verification
+    const profile = await fetchGoogleProfile(accessToken, fetchFn);
+    const approvedAccountId = settings?.approvedGoogleAccountId;
+    const approvedAccountEmail = settings?.approvedGoogleEmail;
+
+    // Check 1: If local device has an approved account lock, enforce match
+    if (approvedAccountId && profile.id !== approvedAccountId) {
+      const emailMatches =
+        approvedAccountEmail && profile.email.toLowerCase() === approvedAccountEmail.toLowerCase();
+      if (!emailMatches) {
+        throw new Error(
+          `This device signed in with a different Google account (${profile.email}) than your configured FinanceFlow account (${approvedAccountEmail || approvedAccountId}). Syncing with a different account would NOT access your existing data. Please sign in with the correct account, or contact support/reset if you intend to start fresh.`
+        );
+      }
+    }
+
     notifySyncStatus('syncing', 'Fetching remote data from Google Drive...');
 
     // Download remote manifest and data
@@ -427,11 +496,40 @@ export async function performGoogleDriveSync(
 
     if (remoteManifest) {
       console.log(`[Sync] Remote manifest revision: ${remoteManifest.activeRevisionId}`);
+
+      // Check 2: If remote manifest has an approved account, enforce match
+      if (remoteManifest.approvedAccountId) {
+        const remoteMatches =
+          profile.id === remoteManifest.approvedAccountId ||
+          (remoteManifest.approvedAccountEmail &&
+            profile.email.toLowerCase() === remoteManifest.approvedAccountEmail.toLowerCase());
+
+        if (!remoteMatches) {
+          throw new Error(
+            `This device signed in with a different Google account (${profile.email}) than your configured FinanceFlow account (${remoteManifest.approvedAccountEmail || remoteManifest.approvedAccountId}). Syncing with a different account would NOT access your existing data. Please sign in with the correct account, or contact support/reset if you intend to start fresh.`
+          );
+        }
+
+        // Lock canonical account locally on this device if not yet saved
+        if (!approvedAccountId) {
+          await db.settings.update('current', {
+            approvedGoogleAccountId: remoteManifest.approvedAccountId,
+            approvedGoogleEmail: remoteManifest.approvedAccountEmail || profile.email,
+          });
+        }
+      }
+    } else if (!approvedAccountId && profile.id) {
+      // First ever sync: lock this authenticated account as canonical approved account
+      await db.settings.update('current', {
+        approvedGoogleAccountId: profile.id,
+        approvedGoogleEmail: profile.email,
+      });
     }
 
     const lastSyncedAt = settings?.lastSyncedAt || 0;
     let mergedCount = 0;
     let conflicts: SyncConflictRecord[] = [];
+    let duplicatePairs: SyncDuplicatePair[] = [];
 
     // If remote data exists, merge it into local Dexie
     if (remotePayload) {
@@ -439,12 +537,28 @@ export async function performGoogleDriveSync(
       const mergeResult = await mergeRemoteSyncPayload(remotePayload, lastSyncedAt);
       mergedCount = mergeResult.mergedCount;
       conflicts = mergeResult.conflicts;
+      duplicatePairs = mergeResult.duplicatePairs || [];
     }
 
     notifySyncStatus('syncing', 'Encrypting and uploading local changes to Google Drive...');
 
     // Prepare full consolidated payload to upload back to cloud
     const { payload: localPayload, manifest: newManifest } = await buildLocalSyncPayload(0);
+
+    // Merge device lists across manifest and local state
+    const localDevice = await getLocalDeviceInfo();
+    const mergedDevices = aggregateDevicesList(
+      remoteManifest?.devices || settings?.connectedDevices || [],
+      localDevice
+    );
+    newManifest.devices = mergedDevices;
+    localPayload.devices = mergedDevices;
+
+    // Ensure approved account metadata is stamped into manifest
+    newManifest.approvedAccountId = settings?.approvedGoogleAccountId || profile.id;
+    newManifest.approvedAccountEmail = settings?.approvedGoogleEmail || profile.email;
+    localPayload.approvedAccountId = newManifest.approvedAccountId;
+    localPayload.approvedAccountEmail = newManifest.approvedAccountEmail;
 
     // Upload encrypted payload & updated manifest
     await uploadEncryptedSyncToDrive(newManifest, localPayload, masterPin, accessToken, fetchFn);
@@ -453,19 +567,33 @@ export async function performGoogleDriveSync(
     await db.settings.update('current', {
       lastSyncedAt: newManifest.lastSyncTimestamp,
       googleDriveLinked: true,
+      googleDriveUserEmail: profile.email,
+      approvedGoogleAccountId: newManifest.approvedAccountId,
+      approvedGoogleEmail: newManifest.approvedAccountEmail,
+      connectedDevices: mergedDevices,
     });
 
-    const status: SyncStatus = conflicts.length > 0 ? 'conflict' : 'synced';
-    const msg = conflicts.length > 0
-      ? `Sync complete with ${conflicts.length} conflict(s) resolved via LWW.`
-      : `Sync complete. ${mergedCount} changes merged.`;
+    const status: SyncStatus =
+      conflicts.length > 0
+        ? 'conflict'
+        : duplicatePairs.length > 0
+        ? 'duplicate_detected'
+        : 'synced';
 
-    notifySyncStatus(status, msg, conflicts);
+    const msg =
+      conflicts.length > 0
+        ? `Sync complete with ${conflicts.length} conflict(s) resolved via LWW.`
+        : duplicatePairs.length > 0
+        ? `Sync complete. ${duplicatePairs.length} possible cross-device duplicate(s) flagged for review.`
+        : `Sync complete. ${mergedCount} changes merged.`;
+
+    notifySyncStatus(status, msg, conflicts, duplicatePairs);
 
     return {
       success: true,
       mergedCount,
       conflicts,
+      duplicatePairs,
       manifest: newManifest,
     };
   } catch (error: any) {
@@ -473,4 +601,77 @@ export async function performGoogleDriveSync(
     notifySyncStatus('error', errMessage);
     throw error;
   }
+}
+
+/**
+ * Deliberate "Change Approved Google Account" Migration Pathway
+ * Gated behind master PIN. Authenticates new account and atomically updates
+ * both local database and remote sync manifest with the newly approved credentials.
+ */
+export async function changeApprovedGoogleAccount(
+  masterPin: string,
+  newClientId?: string,
+  customToken?: string,
+  fetchFn = fetch
+): Promise<{ success: boolean; approvedEmail: string; approvedAccountId: string }> {
+  const settings = await db.settings.get('current');
+  const effectiveClientId = newClientId || settings?.googleDriveClientId || '';
+
+  let accessToken = customToken || getCachedAccessToken();
+  if (!accessToken) {
+    if (!effectiveClientId) {
+      throw new Error('Google Drive Client ID is missing. Please configure it in Settings.');
+    }
+    accessToken = await requestGoogleDriveAuth(effectiveClientId);
+  }
+
+  const newProfile = await fetchGoogleProfile(accessToken, fetchFn);
+  const deviceId = getOrCreateDeviceId();
+  const now = Date.now();
+
+  // 1. Update local settings
+  await db.settings.update('current', {
+    approvedGoogleAccountId: newProfile.id,
+    approvedGoogleEmail: newProfile.email,
+    googleDriveUserEmail: newProfile.email,
+    googleDriveLinked: true,
+  });
+
+  // 2. Update remote manifest on Google Drive
+  try {
+    const { manifest: remoteManifest, payload: remotePayload } = await downloadEncryptedSyncFromDrive(
+      masterPin,
+      accessToken,
+      fetchFn
+    );
+
+    if (remoteManifest && remotePayload) {
+      remoteManifest.approvedAccountId = newProfile.id;
+      remoteManifest.approvedAccountEmail = newProfile.email;
+      remoteManifest.updatedAt = now;
+      remotePayload.approvedAccountId = newProfile.id;
+      remotePayload.approvedAccountEmail = newProfile.email;
+
+      await uploadEncryptedSyncToDrive(remoteManifest, remotePayload, masterPin, accessToken, fetchFn);
+    }
+  } catch (syncErr) {
+    console.warn('[ChangeApprovedAccount] Remote manifest update notice:', syncErr);
+  }
+
+  // 3. Record audit log
+  await db.audit_logs.add({
+    id: 'audit_' + crypto.randomUUID().slice(0, 8),
+    entityType: 'account',
+    entityId: 'google_drive_approved_account',
+    action: 'update',
+    deviceId,
+    timestamp: now,
+    changeSummary: `User authorized migration of approved Google Account lock to ${newProfile.email} (${newProfile.id}).`,
+  });
+
+  return {
+    success: true,
+    approvedEmail: newProfile.email,
+    approvedAccountId: newProfile.id,
+  };
 }

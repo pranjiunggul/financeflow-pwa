@@ -107,9 +107,12 @@ export async function requestGoogleDriveAuth(clientId: string): Promise<string> 
 }
 
 /**
- * Fetch profile info of the authenticated Google user
+ * Fetch profile info of the authenticated Google user (email, name, and unique Google account ID)
  */
-export async function fetchGoogleProfile(accessToken: string, fetchFn = fetch): Promise<{ email: string; name: string }> {
+export async function fetchGoogleProfile(
+  accessToken: string,
+  fetchFn = fetch
+): Promise<{ email: string; name: string; id: string }> {
   // Strategy 1: Drive about endpoint (always succeeds with drive.appdata scope)
   try {
     const driveResp = await fetchFn('https://www.googleapis.com/drive/v3/about?fields=user', {
@@ -121,6 +124,7 @@ export async function fetchGoogleProfile(accessToken: string, fetchFn = fetch): 
         return {
           email: data.user.emailAddress,
           name: data.user.displayName || 'Google User',
+          id: data.user.permissionId || data.user.emailAddress,
         };
       }
     }
@@ -138,6 +142,7 @@ export async function fetchGoogleProfile(accessToken: string, fetchFn = fetch): 
       return {
         email: data.email || 'Google User',
         name: data.name || 'Google User',
+        id: data.sub || data.id || data.email || 'unknown_google_id',
       };
     }
   } catch (err) {
@@ -148,6 +153,7 @@ export async function fetchGoogleProfile(accessToken: string, fetchFn = fetch): 
   return {
     email: 'Connected Google Account',
     name: 'Google User',
+    id: 'fallback_google_account_id',
   };
 }
 
