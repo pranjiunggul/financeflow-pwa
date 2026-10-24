@@ -19,6 +19,72 @@ import { db } from '../db/database';
 import { detectDeviceInfo } from './device';
 
 export const TELEMETRY_WORKER_URL = 'https://financeflow-telemetry.dhikaherlambang.workers.dev/report';
+export const TELEMETRY_REPORTS_URL = 'https://financeflow-telemetry.dhikaherlambang.workers.dev/reports';
+
+export interface StoredCrashReport extends TelemetryPayload {
+  id: string;
+  storedAt: number;
+}
+
+export interface TelemetryReportsResponse {
+  success: boolean;
+  count: number;
+  reports: StoredCrashReport[];
+}
+
+/**
+ * Retrieves persisted crash reports from the Cloudflare KV-backed telemetry worker.
+ * Strictly returns allow-listed technical crash logs.
+ */
+export async function fetchStoredCrashReports(
+  authToken?: string,
+  limit = 50,
+  fetchFn = fetch
+): Promise<StoredCrashReport[]> {
+  try {
+    const url = new URL(TELEMETRY_REPORTS_URL);
+    url.searchParams.set('limit', String(limit));
+
+    const headers: Record<string, string> = {};
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const res = await fetchFn(url.toString(), { method: 'GET', headers });
+    if (!res.ok) return [];
+
+    const data: TelemetryReportsResponse = await res.json();
+    return data.reports || [];
+  } catch (err) {
+    console.warn('[Telemetry] Failed to fetch stored reports:', err);
+    return [];
+  }
+}
+
+/**
+ * Deletes a persisted crash report from Cloudflare KV by ID.
+ */
+export async function deleteStoredCrashReport(
+  id: string,
+  authToken?: string,
+  fetchFn = fetch
+): Promise<boolean> {
+  try {
+    const url = new URL('https://financeflow-telemetry.dhikaherlambang.workers.dev/report');
+    url.searchParams.set('id', id);
+
+    const headers: Record<string, string> = {};
+    if (authToken) {
+      headers['Authorization'] = `Bearer ${authToken}`;
+    }
+
+    const res = await fetchFn(url.toString(), { method: 'DELETE', headers });
+    return res.ok;
+  } catch (err) {
+    console.warn('[Telemetry] Failed to delete report:', err);
+    return false;
+  }
+}
 
 export interface TelemetryPayload {
   errorMessage: string;
