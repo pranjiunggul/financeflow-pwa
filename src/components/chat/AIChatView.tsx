@@ -20,6 +20,7 @@ import type {
 import { sendUnifiedChatMessage } from '../../services/ai';
 import { ActionProposalCard } from './ActionProposalCard';
 import { ReceiptScannerModal } from './ReceiptScannerModal';
+import { BulkHistoryImportModal } from '../transactions/BulkHistoryImportModal';
 
 interface AIChatViewProps {
   accounts: Account[];
@@ -66,6 +67,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isReceiptModalOpen, setIsReceiptModalOpen] = useState(false);
+  const [isBulkHistoryModalOpen, setIsBulkHistoryModalOpen] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | Blob | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -386,6 +388,27 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
         masterPin={masterPin}
         initialFile={selectedImageFile}
         onProposalGenerated={handleProposalGeneratedFromOCR}
+        onSwitchToBulkHistory={() => setIsBulkHistoryModalOpen(true)}
+      />
+
+      {/* Bulk History Multi-Row Screenshot Modal */}
+      <BulkHistoryImportModal
+        isOpen={isBulkHistoryModalOpen}
+        onClose={() => setIsBulkHistoryModalOpen(false)}
+        accounts={accounts}
+        categories={categories}
+        baseCurrency={baseCurrency}
+        settings={settings}
+        masterPin={masterPin}
+        onSuccess={(count) => {
+          const successMsg: ChatMessage = {
+            id: 'msg_imported_' + Date.now(),
+            role: 'assistant',
+            content: `✅ Berhasil mengimpor **${count} transaksi** dari screenshot riwayat mutasi langsung ke buku kas Anda.`,
+            timestamp: Date.now(),
+          };
+          setMessages((prev) => [...prev, successMsg]);
+        }}
       />
     </div>
   );

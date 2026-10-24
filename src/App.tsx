@@ -38,6 +38,7 @@ import { AppLockModal } from './components/security/AppLockModal';
 import { ExportReportModal } from './components/analytics/ExportReportModal';
 import { ConflictReviewModal } from './components/sync/ConflictReviewModal';
 import { TelegramInboxModal } from './components/telegram/TelegramInboxModal';
+import { BulkHistoryImportModal } from './components/transactions/BulkHistoryImportModal';
 import { getRecentConflicts } from './services/sync';
 import type { SyncConflictRecord } from './types';
 
@@ -65,6 +66,7 @@ export const App: React.FC = () => {
   const [isExportReportOpen, setIsExportReportOpen] = useState(false);
   const [isConflictModalOpen, setIsConflictModalOpen] = useState(false);
   const [isTelegramModalOpen, setIsTelegramModalOpen] = useState(false);
+  const [isBulkHistoryModalOpen, setIsBulkHistoryModalOpen] = useState(false);
   const [activeConflicts, setActiveConflicts] = useState<SyncConflictRecord[]>([]);
 
   // Live Dexie database queries
@@ -218,6 +220,7 @@ export const App: React.FC = () => {
               baseCurrency={baseCurrency}
               onOpenNewTransaction={() => handleOpenNewTransaction()}
               onEditTransaction={handleEditTransaction}
+              onOpenBulkHistory={() => setIsBulkHistoryModalOpen(true)}
             />
           )}
 
@@ -352,6 +355,17 @@ export const App: React.FC = () => {
         accounts={accounts}
         categories={categories}
         baseCurrency={baseCurrency}
+      />
+
+      {/* Multi-Row History Screenshot OCR Modal */}
+      <BulkHistoryImportModal
+        isOpen={isBulkHistoryModalOpen}
+        onClose={() => setIsBulkHistoryModalOpen(false)}
+        accounts={accounts}
+        categories={categories}
+        baseCurrency={baseCurrency}
+        settings={settings || null}
+        masterPin={sessionPin}
       />
 
       {/* App Lock Screen Overlay */}

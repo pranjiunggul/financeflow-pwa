@@ -14,6 +14,7 @@ import {
   TrendingUp,
   Cpu,
   Plus,
+  Layers,
 } from 'lucide-react';
 import { scanReceiptImage, scanReceiptWithAI, createProposalFromOCR } from '../../services/ocr';
 import type {
@@ -38,6 +39,7 @@ interface ReceiptScannerModalProps {
   masterPin?: string;
   initialFile?: File | Blob | null;
   onProposalGenerated: (proposal: ActionProposal) => void;
+  onSwitchToBulkHistory?: () => void;
 }
 
 export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
@@ -50,6 +52,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   masterPin,
   initialFile,
   onProposalGenerated,
+  onSwitchToBulkHistory,
 }) => {
   const liveSettings = useLiveQuery(() => db.settings.get('current'));
   const effectiveSettings = settings || liveSettings;
@@ -66,7 +69,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
 
   // Editable Form States for Interactive Review
   const [editType, setEditType] = useState<TransactionType>('expense');
-  const [editAmount, setEditAmount] = useState<number>(0);
+  const [editAmount, setEditAmount] = useState<number | ''>('');
   const [editAccountId, setEditAccountId] = useState<string>('');
   const [editToAccountId, setEditToAccountId] = useState<string>('');
   const [editCategoryId, setEditCategoryId] = useState<string>('');
@@ -78,6 +81,14 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   const [isQuickAddCategoryOpen, setIsQuickAddCategoryOpen] = useState(false);
   const [isQuickAddAccountOpen, setIsQuickAddAccountOpen] = useState(false);
   const [isQuickAddToAccountOpen, setIsQuickAddToAccountOpen] = useState(false);
+
+  const isLowConfidence = !!(
+    scanResult?.isLowConfidence ||
+    (scanResult && scanResult.confidence < 70) ||
+    scanResult?.unparsedAmount ||
+    !scanResult?.totalAmount ||
+    (scanResult?.totalAmount !== undefined && scanResult.totalAmount <= 0)
+  );
 
   // AI Vision is preconfigured and always ready out of the box
   useEffect(() => {
@@ -142,7 +153,7 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
       // Auto-populate interactive editable verification form
       const proposal = createProposalFromOCR(result, accounts, categories, baseCurrency);
       setEditType((proposal.data.type as TransactionType) || 'expense');
-      setEditAmount(proposal.data.amount || 0);
+      setEditAmount(proposal.data.amount && proposal.data.amount > 0 ? proposal.data.amount : '');
       setEditAccountId(proposal.data.accountId || accounts[0]?.id || '');
       setEditToAccountId(proposal.data.transferMeta?.toAccountId || '');
       setEditCategoryId(proposal.data.categoryId || categories[0]?.id || '');
@@ -185,8 +196,9 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
   };
 
   const handleCommitProposal = () => {
-    if (!editAmount || editAmount <= 0) {
-      setErrorMessage('Nominal transaksi harus lebih dari 0.');
+    const finalAmountNum = typeof editAmount === 'number' ? editAmount : parseFloat(String(editAmount)) || 0;
+    if (!finalAmountNum || finalAmountNum <= 0) {
+      setErrorMessage('Nominal transaksi wajib diisi dan harus lebih dari 0.');
       return;
     }
 
@@ -197,16 +209,16 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
 
     let summary = '';
     if (editType === 'transfer' && selectedDestAcc) {
-      summary = `[Transfer Antar Rekening] Transfer ${editAmount.toLocaleString()} ${currency} dari "${selectedAcc?.name}" ke "${selectedDestAcc.name}"`;
+      summary = `[Transfer Antar Rekening] Transfer ${finalAmountNum.toLocaleString()} ${currency} dari "${selectedAcc?.name}" ke "${selectedDestAcc.name}"`;
     } else if (editType === 'income') {
-      summary = `[Pemasukan Rekening] Terima ${editAmount.toLocaleString()} ${currency} di "${selectedAcc?.name}" dari "${editDescription}"`;
+      summary = `[Pemasukan Rekening] Terima ${finalAmountNum.toLocaleString()} ${currency} di "${selectedAcc?.name}" dari "${editDescription}"`;
     } else {
-      summary = `[Bukti Transaksi] Catat pengeluaran ${editAmount.toLocaleString()} ${currency} untuk "${editDescription}" (${editDate})`;
+      summary = `[Bukti Transaksi] Catat pengeluaran ${finalAmountNum.toLocaleString()} ${currency} untuk "${editDescription}" (${editDate})`;
     }
 
     const proposalData: any = {
       type: editType,
-      amount: editAmount,
+      amount: finalAmountNum,
       currency,
       description: editDescription,
       accountId: selectedAcc?.id,
@@ -304,6 +316,21 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
               <Cpu className="w-3.5 h-3.5 text-slate-400" />
               <span>Offline OCR (Lokal)</span>
             </button>
+
+            {onSwitchToBulkHistory && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onSwitchToBulkHistory();
+                }}
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg font-medium text-sky-400 hover:text-sky-300 hover:bg-sky-500/10 border border-sky-500/20 transition ml-1"
+                title="Beralih ke pemindaian riwayat mutasi / banyak baris"
+              >
+                <Layers className="w-3.5 h-3.5 text-sky-400" />
+                <span>Multi-Baris Riwayat</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -405,100 +432,126 @@ export const ReceiptScannerModal: React.FC<ReceiptScannerModalProps> = ({
           {scanResult && (
             <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
-                    <CheckCircle className="w-4 h-4" />
-                    <span>Rincian Transaksi Dikenali</span>
+                  <div className="flex items-center space-x-2">
+                    {isLowConfidence ? (
+                      <div className="flex items-center space-x-1.5 text-amber-400 font-bold">
+                        <AlertTriangle className="w-4 h-4 text-amber-400" />
+                        <span>Perlu Verifikasi Manual ({scanResult.confidence}%)</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center space-x-1.5 text-emerald-400 font-bold">
+                        <CheckCircle className="w-4 h-4" />
+                        <span>Rincian Transaksi Dikenali ({scanResult.confidence}%)</span>
+                      </div>
+                    )}
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                      scanResult.engineUsed === 'ai_vision'
+                        ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
+                        : 'bg-slate-800 text-slate-300 border-slate-700'
+                    }`}>
+                      {scanResult.engineUsed === 'ai_vision' ? '✨ Multimodal AI Vision' : 'Tesseract OCR'}
+                    </span>
                   </div>
-                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                    scanResult.engineUsed === 'ai_vision'
-                      ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                      : 'bg-slate-800 text-slate-300 border-slate-700'
-                  }`}>
-                    {scanResult.engineUsed === 'ai_vision' ? '✨ Multimodal AI Vision' : 'Tesseract OCR'}
-                  </span>
-                </div>
-                {scanResult.isDuplicate && (
-                  <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center space-x-1">
-                    <AlertTriangle className="w-3 h-3" />
-                    <span>Kemungkinan Bukti Duplikat</span>
-                  </span>
-                )}
-              </div>
-
-              {scanResult.isDuplicate && (
-                <p className="text-amber-400/90 text-[11px] bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
-                  ⚠️ Foto bukti transaksi ini memiliki sidik jari identik dengan transaksi yang sudah dicatat sebelumnya. Periksa kembali untuk mencegah pencatatan ganda.
-                </p>
-              )}
-
-              {/* Transaction Type Selector */}
-              <div>
-                <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Tipe Transaksi
-                </label>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditType('expense')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition ${
-                      editType === 'expense'
-                        ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
-                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                  >
-                    <TrendingDown className="w-3.5 h-3.5" />
-                    <span>Pengeluaran</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setEditType('income')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition ${
-                      editType === 'income'
-                        ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
-                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                  >
-                    <TrendingUp className="w-3.5 h-3.5" />
-                    <span>Pemasukan</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setEditType('transfer')}
-                    className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition ${
-                      editType === 'transfer'
-                        ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
-                        : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
-                    }`}
-                  >
-                    <ArrowLeftRight className="w-3.5 h-3.5" />
-                    <span>Transfer Antar Rek</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Form Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                {/* Nominal Amount */}
-                <div className="space-y-1">
-                  <label className="text-slate-400 font-semibold block text-[11px]">
-                    Nominal Transaksi ({baseCurrency})
-                  </label>
-                  <input
-                    type="number"
-                    value={editAmount || ''}
-                    onChange={(e) => setEditAmount(parseFloat(e.target.value) || 0)}
-                    placeholder="Contoh: 150000"
-                    className="w-full px-3 py-2 bg-slate-900 border border-slate-700/80 rounded-xl text-white font-mono font-bold text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {editAmount > 0 && (
-                    <span className="text-[10px] text-emerald-400 font-mono block">
-                      = Rp {editAmount.toLocaleString('id-ID')}
+                  {scanResult.isDuplicate && (
+                    <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center space-x-1">
+                      <AlertTriangle className="w-3 h-3" />
+                      <span>Kemungkinan Bukti Duplikat</span>
                     </span>
                   )}
                 </div>
+
+                {(!scanResult.totalAmount || scanResult.totalAmount <= 0) && (
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs flex items-center space-x-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400" />
+                    <span>⚠️ Nominal total tidak terdeteksi otomatis dari gambar. Silakan periksa dan masukkan nominal pada kolom di bawah.</span>
+                  </div>
+                )}
+
+                {scanResult.isDuplicate && (
+                  <p className="text-amber-400/90 text-[11px] bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                    ⚠️ Foto bukti transaksi ini memiliki sidik jari identik dengan transaksi yang sudah dicatat sebelumnya. Periksa kembali untuk mencegah pencatatan ganda.
+                  </p>
+                )}
+
+                {/* Transaction Type Selector */}
+                <div>
+                  <label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-1.5">
+                    Tipe Transaksi
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditType('expense')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition ${
+                        editType === 'expense'
+                          ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      <TrendingDown className="w-3.5 h-3.5" />
+                      <span>Pengeluaran</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditType('income')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition ${
+                        editType === 'income'
+                          ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-500/30'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      <TrendingUp className="w-3.5 h-3.5" />
+                      <span>Pemasukan</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setEditType('transfer')}
+                      className={`py-2 px-2 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition ${
+                        editType === 'transfer'
+                          ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/30'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
+                      }`}
+                    >
+                      <ArrowLeftRight className="w-3.5 h-3.5" />
+                      <span>Transfer Antar Rek</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Form Grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  {/* Nominal Amount */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <label className="text-slate-400 font-semibold block text-[11px]">
+                        Nominal Transaksi ({baseCurrency})
+                      </label>
+                      {(!editAmount || Number(editAmount) <= 0) && (
+                        <span className="text-[10px] text-amber-400 font-bold flex items-center space-x-1">
+                          <AlertTriangle className="w-3 h-3" />
+                          <span>Wajib Diisi</span>
+                        </span>
+                      )}
+                    </div>
+                    <input
+                      type="number"
+                      value={editAmount}
+                      onChange={(e) => setEditAmount(e.target.value === '' ? '' : parseFloat(e.target.value) || '')}
+                      placeholder="0 (Wajib masukkan nominal)"
+                      className={`w-full px-3 py-2 bg-slate-900 border rounded-xl text-white font-mono font-bold text-sm focus:outline-none focus:ring-2 ${
+                        !editAmount || Number(editAmount) <= 0
+                          ? 'border-amber-500/80 ring-1 ring-amber-500/50 bg-amber-500/5'
+                          : 'border-slate-700/80 focus:ring-indigo-500'
+                      }`}
+                    />
+                    {typeof editAmount === 'number' && editAmount > 0 && (
+                      <span className="text-[10px] text-emerald-400 font-mono block">
+                        = Rp {editAmount.toLocaleString('id-ID')}
+                      </span>
+                    )}
+                  </div>
 
                 {/* Date */}
                 <div className="space-y-1">

@@ -5,6 +5,7 @@ import {
   Trash2,
   RotateCcw,
   Calendar,
+  Layers,
 } from 'lucide-react';
 import type {
   Transaction,
@@ -23,6 +24,7 @@ interface TransactionListViewProps {
   baseCurrency: CurrencyCode;
   onOpenNewTransaction: () => void;
   onEditTransaction: (tx: Transaction) => void;
+  onOpenBulkHistory?: () => void;
 }
 
 export const TransactionListView: React.FC<TransactionListViewProps> = ({
@@ -32,6 +34,7 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
   baseCurrency,
   onOpenNewTransaction,
   onEditTransaction,
+  onOpenBulkHistory,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -129,13 +132,27 @@ export const TransactionListView: React.FC<TransactionListViewProps> = ({
           </button>
 
           {!showTrash && (
-            <button
-              onClick={onOpenNewTransaction}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 flex items-center space-x-1.5 transition"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Add</span>
-            </button>
+            <div className="flex items-center space-x-2">
+              {onOpenBulkHistory && (
+                <button
+                  onClick={onOpenBulkHistory}
+                  className="px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-sky-400 hover:text-sky-300 border border-slate-700/80 rounded-xl text-xs sm:text-sm font-semibold flex items-center space-x-1.5 transition shadow-sm"
+                  title="Scan & Impor Riwayat Transaksi dari Screenshot Multi-Baris"
+                >
+                  <Layers className="w-4 h-4 text-sky-400" />
+                  <span className="hidden sm:inline">Scan Riwayat</span>
+                  <span className="sm:hidden">Riwayat</span>
+                </button>
+              )}
+
+              <button
+                onClick={onOpenNewTransaction}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs sm:text-sm font-bold shadow-lg shadow-blue-600/30 flex items-center space-x-1.5 transition"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Add</span>
+              </button>
+            </div>
           )}
         </div>
       </div>

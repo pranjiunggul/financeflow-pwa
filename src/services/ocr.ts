@@ -478,7 +478,7 @@ export function parseReceiptText(rawText: string): Omit<OCRScanResult, 'confiden
     sourceAccountName,
     destinationAccountName,
     date,
-    totalAmount: finalAmount || 0,
+    totalAmount: finalAmount,
     nominalAmount,
     feeAmount: feeAmount || 0,
     taxAmount,
@@ -487,6 +487,8 @@ export function parseReceiptText(rawText: string): Omit<OCRScanResult, 'confiden
     referenceNumber,
     lineItems: [],
     rawText,
+    unparsedAmount: !finalAmount || finalAmount <= 0,
+    isLowConfidence: !finalAmount || finalAmount <= 0,
   };
 }
 
@@ -728,6 +730,9 @@ RULES:
 
   const parsed = JSON.parse(cleaned);
 
+  const parsedTotal = typeof parsed.amount === 'number' ? parsed.amount : (parsed.amount ? parseCurrencyAmount(String(parsed.amount)) : undefined);
+  const unparsedAmount = !parsedTotal || parsedTotal <= 0;
+
   return {
     merchantName: parsed.merchantName || parsed.recipientName || 'Transaction',
     recipientName: parsed.merchantName || parsed.recipientName,
@@ -735,18 +740,20 @@ RULES:
     destinationAccountName: parsed.destinationAccountName,
     transactionType: parsed.transactionType || 'expense',
     date: parsed.date || new Date().toISOString().split('T')[0],
-    totalAmount: typeof parsed.amount === 'number' ? parsed.amount : parseCurrencyAmount(String(parsed.amount || 0)),
-    nominalAmount: typeof parsed.amount === 'number' ? parsed.amount : parseCurrencyAmount(String(parsed.amount || 0)),
+    totalAmount: parsedTotal,
+    nominalAmount: parsedTotal,
     feeAmount: typeof parsed.feeAmount === 'number' ? parsed.feeAmount : parseCurrencyAmount(String(parsed.feeAmount || 0)),
     currency: parsed.currency || baseCurrency,
     notes: parsed.notes,
     referenceNumber: parsed.referenceNumber,
     categorySuggestion: parsed.categorySuggestion,
     rawText: responseJsonText,
-    confidence: 98,
+    confidence: unparsedAmount ? 50 : 98,
     imageHash,
     isDuplicate,
     engineUsed: 'ai_vision',
+    unparsedAmount,
+    isLowConfidence: unparsedAmount,
   };
 }
 
@@ -795,12 +802,18 @@ export async function scanReceiptImage(
 
   onProgress?.(100, 'Pemindaian selesai!');
 
+  const confidence = Math.round(ret.data.confidence);
+  const unparsedAmount = !parsed.totalAmount || parsed.totalAmount <= 0;
+  const isLowConfidence = confidence < 70 || unparsedAmount;
+
   return {
     ...parsed,
-    confidence: Math.round(ret.data.confidence),
+    confidence,
     imageHash,
     isDuplicate,
     engineUsed: 'tesseract_ocr',
+    unparsedAmount,
+    isLowConfidence,
   };
 }
 
@@ -895,8 +908,9 @@ export function createProposalFromOCR(
     }
   }
 
-  const safeTotal = ocr.totalAmount || ocr.nominalAmount || 0;
+  const safeTotal = ocr.totalAmount !== undefined ? ocr.totalAmount : ocr.nominalAmount;
   const currency = (ocr.currency || sourceAccount?.currency || baseCurrency) as CurrencyCode;
+  const displayAmount = safeTotal !== undefined && safeTotal > 0 ? `${safeTotal.toLocaleString()} ${currency}` : `[Nominal Belum Terdeteksi]`;
 
   // Build clean summary description
   let description = ocr.merchantName || ocr.recipientName || 'Transaksi';
@@ -906,11 +920,11 @@ export function createProposalFromOCR(
 
   let summary = '';
   if (txType === 'transfer' && matchedDestAccount) {
-    summary = `[Transfer Antar Rekening] Transfer ${safeTotal.toLocaleString()} ${currency} dari "${sourceAccount?.name}" ke "${matchedDestAccount.name}"`;
+    summary = `[Transfer Antar Rekening] Transfer ${displayAmount} dari "${sourceAccount?.name}" ke "${matchedDestAccount.name}"`;
   } else if (txType === 'income') {
-    summary = `[Pemasukan Rekening] Terima ${safeTotal.toLocaleString()} ${currency} di "${sourceAccount?.name}" dari "${ocr.merchantName || 'Transfer Masuk'}"`;
+    summary = `[Pemasukan Rekening] Terima ${displayAmount} di "${sourceAccount?.name}" dari "${ocr.merchantName || 'Transfer Masuk'}"`;
   } else {
-    summary = `[Bukti Transaksi] Catat pengeluaran ${safeTotal.toLocaleString()} ${currency} di "${description}" (${ocr.date})`;
+    summary = `[Bukti Transaksi] Catat pengeluaran ${displayAmount} di "${description}" (${ocr.date})`;
   }
 
   const proposalData: any = {
@@ -925,6 +939,7 @@ export function createProposalFromOCR(
     date: ocr.date,
     receiptHash: ocr.imageHash,
     inputSource: 'ocr',
+    unparsedAmount: !safeTotal || safeTotal <= 0,
   };
 
   if (txType === 'transfer' && matchedDestAccount) {

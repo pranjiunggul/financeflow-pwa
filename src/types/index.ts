@@ -334,6 +334,8 @@ export interface OCRScanResult {
   confidence: number;
   imageHash: string;
   isDuplicate?: boolean;
+  isLowConfidence?: boolean;
+  unparsedAmount?: boolean;
   engineUsed?: 'ai_vision' | 'tesseract_ocr';
 }
 
