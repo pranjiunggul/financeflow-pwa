@@ -102,7 +102,19 @@ Pelajari seluruh panduan dwibahasa yang telah disiapkan:
 
 ---
 
-## Memulai Cepat (Pengembangan Lokal)
+## Memulai Cepat (Skrip Setup Otomatis)
+
+Clone repositori dan jalankan skrip instalasi otomatis sesuai sistem operasi Anda:
+
+```bash
+# Pengguna Windows
+SETUP_FINANCEFLOW.bat
+
+# Pengguna macOS / Linux
+chmod +x setup-financeflow.sh && ./setup-financeflow.sh
+```
+
+Atau jalankan langkah instalasi manual berikut:
 
 ```bash
 # 1. Clone repositori

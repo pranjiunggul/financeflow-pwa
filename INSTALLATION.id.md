@@ -35,6 +35,38 @@ Sebelum memulai instalasi FinanceFlow, pastikan perangkat Anda memenuhi spesifik
 
 FinanceFlow didesain dengan arsitektur **Zero-Build-Time Configuration**. Anda **tidak perlu** membuat atau mengelola file `.env` untuk mem-build, menjalankan, atau menguji aplikasi. Semua kredensial rahasia, API key, dan URL endpoint diatur langsung oleh pengguna di halaman Pengaturan (Settings) aplikasi dan disimpan secara aman dan terenkripsi di IndexedDB browser pengguna.
 
+### Cara Cepat: Skrip Pemasangan Otomatis (Direkomendasikan)
+
+Untuk mendeteksi prasyarat, memasang dependensi, memeriksa Cloudflare Wrangler, dan memverifikasi build produksi secara otomatis dalam satu klik, gunakan skrip berikut:
+
+#### Pengguna Windows:
+Klik ganda file `SETUP_FINANCEFLOW.bat` di folder utama proyek, atau jalankan via Command Prompt:
+```cmd
+SETUP_FINANCEFLOW.bat
+```
+
+#### Pengguna macOS & Linux:
+Jalankan skrip bash POSIX berikut di terminal:
+```bash
+chmod +x setup-financeflow.sh
+./setup-financeflow.sh
+```
+
+**Kemampuan Otomatis Skrip Setup:**
+1. Mendeteksi Node.js (v18+) dan menginstal otomatis via package manager (`winget` di Windows, `brew` di macOS) jika belum terpasang.
+2. Memeriksa ketersediaan Cloudflare Wrangler CLI.
+3. Memberikan opsi *Clean Reinstall* (membersihkan `node_modules` lama dan lockfile) untuk mencegah konflik dependensi.
+4. Menyiapkan file `.env` dari `.env.example` sebagai catatan checklist referensi.
+5. Memeriksa status login Cloudflare (`wrangler whoami`).
+6. Opsi langsung mendeploy Cloudflare Workers (`financeflow-relay` dan `financeflow-telemetry`).
+7. Memverifikasi build produksi (`npm run build`).
+
+---
+
+### Langkah Manual Bertahap (Sebagai Cadangan & Referensi)
+
+Jika Anda ingin melakukan instalasi secara mandiri per langkah:
+
 ### Langkah 2.1: Clone & Pasang Dependencies
 
 ```bash

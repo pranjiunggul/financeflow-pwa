@@ -102,7 +102,19 @@ Explore the comprehensive bilingual documentation suite:
 
 ---
 
-## Quick Start (Local Development)
+## Quick Start (Automated Setup)
+
+Clone the repository and run the automated setup script for your platform:
+
+```bash
+# Windows
+SETUP_FINANCEFLOW.bat
+
+# macOS / Linux
+chmod +x setup-financeflow.sh && ./setup-financeflow.sh
+```
+
+Or follow manual steps:
 
 ```bash
 # 1. Clone repository

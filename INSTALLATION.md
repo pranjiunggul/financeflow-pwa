@@ -35,6 +35,38 @@ Before setting up FinanceFlow, ensure your environment meets these requirements:
 
 FinanceFlow is designed with a **Zero-Build-Time Configuration** architecture. You do not need to create or maintain a `.env` file to build, run, or test the application. All credentials, API keys, and endpoints are configured client-side inside the app's Settings page and stored securely in browser IndexedDB.
 
+### Quick Start: One-Click Setup Script (Recommended)
+
+To automate prerequisites detection, dependency installation, Cloudflare Wrangler check, and production build verification, run the automated setup script for your platform:
+
+#### Windows:
+Double-click `SETUP_FINANCEFLOW.bat` in the repository root, or run:
+```cmd
+SETUP_FINANCEFLOW.bat
+```
+
+#### macOS & Linux:
+Run the POSIX setup shell script in terminal:
+```bash
+chmod +x setup-financeflow.sh
+./setup-financeflow.sh
+```
+
+**What the setup script does automatically:**
+1. Detects Node.js (v18+) and attempts automatic installation via package manager (`winget` on Windows, `brew` on macOS) if missing.
+2. Checks Cloudflare Wrangler CLI availability.
+3. Offers a Clean Reinstall option (removing old `node_modules` and lockfile) to prevent stale package issues.
+4. Initializes `.env` from `.env.example` as a personal reference checklist.
+5. Verifies interactive Cloudflare authentication status (`wrangler whoami`).
+6. Optionally deploys Cloudflare Workers (`financeflow-relay` and `financeflow-telemetry`).
+7. Runs production build verification (`npm run build`).
+
+---
+
+### Manual Step-by-Step Installation (Fallback & Reference)
+
+If you prefer to perform each step manually:
+
 ### Step 2.1: Clone & Install
 
 ```bash
