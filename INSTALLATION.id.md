@@ -3,9 +3,9 @@
 > - Read this installation guide in **English**: [INSTALLATION.md](file:///c:/Personal%20Finance/INSTALLATION.md)
 > - Kembali ke Dokumentasi Utama: [README.id.md](file:///c:/Personal%20Finance/README.id.md)
 
-# FinanceFlow — Panduan Lengkap Instalasi & Deployment
+# MyFinancialFlow — Panduan Lengkap Instalasi & Deployment
 
-Panduan ini berisi instruksi menyeluruh untuk menginstal, mengonfigurasi, menjalankan di lingkungan lokal (development), dan mendeploy FinanceFlow di seluruh komponen:
+Panduan ini berisi instruksi menyeluruh untuk menginstal, mengonfigurasi, menjalankan di lingkungan lokal (development), dan mendeploy MyFinancialFlow di seluruh komponen:
 1. Prasyarat Sistem
 2. Pengaturan Lingkungan Lokal (Zero-Build-Time `.env`)
 3. Pengaturan Cloud Sync Google Drive (OAuth 2.0 Web Client)
@@ -19,7 +19,7 @@ Panduan ini berisi instruksi menyeluruh untuk menginstal, mengonfigurasi, menjal
 
 ## 1. Prasyarat Sistem
 
-Sebelum memulai instalasi FinanceFlow, pastikan perangkat Anda memenuhi spesifikasi berikut:
+Sebelum memulai instalasi MyFinancialFlow, pastikan perangkat Anda memenuhi spesifikasi berikut:
 
 | Perangkat Lunak | Versi Minimal | Rekomendasi | Catatan |
 | :--- | :--- | :--- | :--- |
@@ -33,7 +33,7 @@ Sebelum memulai instalasi FinanceFlow, pastikan perangkat Anda memenuhi spesifik
 
 ## 2. Pengaturan Lingkungan Lokal (Local Development)
 
-FinanceFlow didesain dengan arsitektur **Zero-Build-Time Configuration**. Anda **tidak perlu** membuat atau mengelola file `.env` untuk mem-build, menjalankan, atau menguji aplikasi. Semua kredensial rahasia, API key, dan URL endpoint diatur langsung oleh pengguna di halaman Pengaturan (Settings) aplikasi dan disimpan secara aman dan terenkripsi di IndexedDB browser pengguna.
+MyFinancialFlow didesain dengan arsitektur **Zero-Build-Time Configuration**. Anda **tidak perlu** membuat atau mengelola file `.env` untuk mem-build, menjalankan, atau menguji aplikasi. Semua kredensial rahasia, API key, dan URL endpoint diatur langsung oleh pengguna di halaman Pengaturan (Settings) aplikasi dan disimpan secara aman dan terenkripsi di IndexedDB browser pengguna.
 
 ### Cara Cepat: Skrip Pemasangan Otomatis (Direkomendasikan)
 
@@ -87,7 +87,7 @@ Development server Vite akan berjalan di `http://localhost:3000` (atau port beri
 
 ### Langkah 2.3: Jalankan Rangkaian Pengujian Otomatis
 
-FinanceFlow dilengkapi dengan 27 rangkaian integration test otomatis yang menguji migrasi database (v6, v7, v8), analitik offline, mesin estimasi pajak PPh, rekonsiliasi pembukuan (ledger), failover otomatis AI, dan persistensi telemetri crash.
+MyFinancialFlow dilengkapi dengan 27 rangkaian integration test otomatis yang menguji migrasi database (v6, v7, v8), analitik offline, mesin estimasi pajak PPh, rekonsiliasi pembukuan (ledger), failover otomatis AI, dan persistensi telemetri crash.
 
 ```bash
 npm test
@@ -110,12 +110,12 @@ npm run preview
 
 ## 3. Pengaturan Cloud Sync Google Drive
 
-FinanceFlow melakukan sinkronisasi data terenkripsi menggunakan direktori khusus `appDataFolder` milik Google Drive (`https://www.googleapis.com/auth/drive.appdata`). Data di folder ini terisolasi sepenuhnya, tidak tampak di aplikasi Google Drive biasa, dan hanya bisa diakses oleh aplikasi FinanceFlow Anda.
+MyFinancialFlow melakukan sinkronisasi data terenkripsi menggunakan direktori khusus `appDataFolder` milik Google Drive (`https://www.googleapis.com/auth/drive.appdata`). Data di folder ini terisolasi sepenuhnya, tidak tampak di aplikasi Google Drive biasa, dan hanya bisa diakses oleh aplikasi MyFinancialFlow Anda.
 
 ### Langkah 3.1: Buat Proyek di Google Cloud Console
 1. Buka [Google Cloud Console](https://console.cloud.google.com/).
 2. Klik dropdown **Select a project** > **New Project**.
-3. Beri nama proyek Anda (misalnya `FinanceFlow-Sync`) dan klik **Create**.
+3. Beri nama proyek Anda (misalnya `MyFinancialFlow-Sync`) dan klik **Create**.
 
 ### Langkah 3.2: Aktifkan Google Drive API
 1. Pada Google Cloud Console, buka menu samping lalu pilih **APIs & Services** > **Library**.
@@ -126,7 +126,7 @@ FinanceFlow melakukan sinkronisasi data terenkripsi menggunakan direktori khusus
 1. Buka menu **APIs & Services** > **OAuth consent screen**.
 2. Pilih tipe user **External** lalu klik **Create**.
 3. Isi informasi yang diperlukan:
-   - **App name**: `FinanceFlow`
+   - **App name**: `MyFinancialFlow`
    - **User support email**: Alamat email Google Anda
    - **Developer contact information**: Alamat email Google Anda
 4. Pada bagian **Scopes**, klik **Add or Remove Scopes**, centang atau masukkan `https://www.googleapis.com/auth/drive.appdata`, lalu simpan.
@@ -136,15 +136,15 @@ FinanceFlow melakukan sinkronisasi data terenkripsi menggunakan direktori khusus
 1. Masuk ke **APIs & Services** > **Credentials**.
 2. Klik tombol **Create Credentials** > **OAuth client ID**.
 3. Pilih **Application type**: **Web application**.
-4. Beri nama: `FinanceFlow Web Client`.
+4. Beri nama: `MyFinancialFlow Web Client`.
 5. Di bagian **Authorized JavaScript origins**, tambahkan:
    - `http://localhost:3000` (untuk pengujian lokal)
    - `https://subdomain-anda.pages.dev` (alamat domain Cloudflare Pages produksi Anda)
 6. Klik **Create**.
 7. Salin **Client ID** yang dihasilkan (berformat `XXXXX.apps.googleusercontent.com`).
 
-### Langkah 3.5: Masukkan Client ID ke FinanceFlow
-1. Buka aplikasi FinanceFlow di browser Anda.
+### Langkah 3.5: Masukkan Client ID ke MyFinancialFlow
+1. Buka aplikasi MyFinancialFlow di browser Anda.
 2. Buka menu **Settings** > **Cloud Sync (Google Drive)**.
 3. Tempel (paste) Google Client ID Anda ke kolom yang tersedia.
 4. Klik tombol **Sign in with Google**.
@@ -154,7 +154,7 @@ FinanceFlow melakukan sinkronisasi data terenkripsi menggunakan direktori khusus
 
 ## 4. Deployment Cloudflare Workers
 
-FinanceFlow memanfaatkan dua Cloudflare Worker ringan yang menjaga privasi:
+MyFinancialFlow memanfaatkan dua Cloudflare Worker ringan yang menjaga privasi:
 1. `financeflow-relay`: Webhook relay untuk menerima pesan Telegram bot dan menyimpannya sementara di Cloudflare KV sebelum diunduh oleh aplikasi PWA.
 2. `financeflow-telemetry`: Pelapor crash opt-in anonim yang hanya menyimpan log diagnostik teknis (7 kolom yang diizinkan tanpa data finansial sedikit pun) dengan retensi otomatis 30 hari (auto-TTL).
 
@@ -263,7 +263,7 @@ Telegram Bot memungkinkan pencatatan transaksi secara cepat kapan saja melalui c
 ### Langkah 6.1: Buat Bot melalui @BotFather
 1. Buka Telegram dan cari akun resmi `@BotFather`.
 2. Kirim perintah `/newbot`.
-3. Berikan nama tampilan bot (misal: `FinanceFlow Catatan`) dan username unik yang berakhiran `bot` (misal: `catatan_financeflow_bot`).
+3. Berikan nama tampilan bot (misal: `MyFinancialFlow Catatan`) dan username unik yang berakhiran `bot` (misal: `catatan_financeflow_bot`).
 4. Salin **HTTP API Bot Token** yang diberikan oleh BotFather (`1234567890:ABCdef...`).
 
 ### Langkah 6.2: Daftarkan Webhook ke Worker Relay
@@ -273,8 +273,8 @@ curl "https://api.telegram.org/bot<TOKEN_BOT_ANDA>/setWebhook?url=https://financ
 ```
 *Hasil yang diharapkan: `{"ok":true,"result":true,"description":"Webhook was set"}`.*
 
-### Langkah 6.3: Konfigurasi di Halaman Pengaturan FinanceFlow
-1. Buka aplikasi FinanceFlow PWA Anda.
+### Langkah 6.3: Konfigurasi di Halaman Pengaturan MyFinancialFlow
+1. Buka aplikasi MyFinancialFlow PWA Anda.
 2. Masuk ke **Settings** > **Telegram Bot**.
 3. Masukkan **Bot Token**.
 4. Masukkan **Relay URL** (`https://financeflow-relay.<subdomain-anda>.workers.dev`).
@@ -286,13 +286,13 @@ curl "https://api.telegram.org/bot<TOKEN_BOT_ANDA>/setWebhook?url=https://financ
 2. Kirim `/auth <PIN_ANDA>` (misal: `/auth 1234`).
 3. Bot akan mengonfirmasi bahwa chat Anda telah berhasil diotorisasi.
 4. Coba kirim transaksi: `Beli kopi 25000 pakai BCA` atau kirim foto struk belanja.
-5. Di aplikasi FinanceFlow, transaksi akan muncul di tab **Inbox** siap untuk Anda tinjau dan setujui.
+5. Di aplikasi MyFinancialFlow, transaksi akan muncul di tab **Inbox** siap untuk Anda tinjau dan setujui.
 
 ---
 
 ## 7. Konfigurasi Provider AI
 
-FinanceFlow dilengkapi **Mesin Fallback AI 3-Tingkat** dengan failover otomatis, pemantauan kesehatan koneksi, dan pelacakan limit penggunaan token. Anda dapat memakai salah satu atau ketiga provider sekaligus:
+MyFinancialFlow dilengkapi **Mesin Fallback AI 3-Tingkat** dengan failover otomatis, pemantauan kesehatan koneksi, dan pelacakan limit penggunaan token. Anda dapat memakai salah satu atau ketiga provider sekaligus:
 
 | Provider | Model yang Disarankan | Skema Harga / Kuota Gratis | Keunggulan Utama |
 | :--- | :--- | :--- | :--- |
@@ -301,7 +301,7 @@ FinanceFlow dilengkapi **Mesin Fallback AI 3-Tingkat** dengan failover otomatis,
 | **OpenRouter** | Multi-model / Fallback | Pay-as-you-go | Gateway cadangan universal jika penyedia lain limit |
 
 ### Cara Memasang API Key:
-1. Buka FinanceFlow PWA.
+1. Buka MyFinancialFlow PWA.
 2. Buka menu **Settings** > **AI Assistant & OCR**.
 3. Masukkan API Key Anda:
    - **Groq API Key**: Didapatkan gratis di [console.groq.com/keys](https://console.groq.com/keys)
@@ -327,4 +327,4 @@ Ikuti panduan ceklis ini untuk memastikan seluruh sistem terpasang dan berjalan 
 - [ ] **9. Uji Mode Offline**: Putuskan koneksi internet. Buat transaksi baru. Sambungkan kembali internet dan pastikan data tersinkronisasi otomatis tanpa konflik.
 - [ ] **10. Ekspor Cadangan**: Masuk ke Settings > Data Management > Export Full Data (ZIP). Pastikan file ZIP terunduh berisi data JSON dan lampiran struk lengkap.
 
-Selamat! FinanceFlow Anda kini telah siap digunakan sepenuhnya untuk mengelola keuangan harian dengan aman dan cerdas.
+Selamat! MyFinancialFlow Anda kini telah siap digunakan sepenuhnya untuk mengelola keuangan harian dengan aman dan cerdas.

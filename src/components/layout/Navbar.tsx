@@ -35,11 +35,11 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Brand */}
         <div className="flex items-center space-x-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <span className="text-white font-black text-lg">F</span>
+            <span className="text-white font-black text-lg">M</span>
           </div>
           <div>
             <h1 className="text-base font-extrabold text-white tracking-tight flex items-center space-x-2">
-              <span>FinanceFlow</span>
+              <span>MyFinancialFlow</span>
               <span className="text-[10px] uppercase font-bold px-1.5 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                 PWA
               </span>

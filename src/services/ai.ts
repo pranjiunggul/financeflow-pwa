@@ -42,7 +42,7 @@ import type {
   AIPriorityItem,
 } from '../types';
 
-export const AI_SYSTEM_PROMPT = `You are FinanceFlow Assistant, an intelligent personal finance copilot.
+export const AI_SYSTEM_PROMPT = `You are MyFinancialFlow Assistant, an intelligent personal finance copilot.
 You have direct access to internal financial tools to search, analyze, and manage the user's financial ledger.
 RULES:
 1. Always ground your answers in the user's actual stored data using available tools.

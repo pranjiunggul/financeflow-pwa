@@ -536,7 +536,7 @@ export async function performGoogleDriveSync(
         approvedAccountEmail && profile.email.toLowerCase() === approvedAccountEmail.toLowerCase();
       if (!emailMatches) {
         throw new Error(
-          `This device signed in with a different Google account (${profile.email}) than your configured FinanceFlow account (${approvedAccountEmail || approvedAccountId}). Syncing with a different account would NOT access your existing data. Please sign in with the correct account, or contact support/reset if you intend to start fresh.`
+          `This device signed in with a different Google account (${profile.email}) than your configured MyFinancialFlow account (${approvedAccountEmail || approvedAccountId}). Syncing with a different account would NOT access your existing data. Please sign in with the correct account, or contact support/reset if you intend to start fresh.`
         );
       }
     }
@@ -562,7 +562,7 @@ export async function performGoogleDriveSync(
 
         if (!remoteMatches) {
           throw new Error(
-            `This device signed in with a different Google account (${profile.email}) than your configured FinanceFlow account (${remoteManifest.approvedAccountEmail || remoteManifest.approvedAccountId}). Syncing with a different account would NOT access your existing data. Please sign in with the correct account, or contact support/reset if you intend to start fresh.`
+            `This device signed in with a different Google account (${profile.email}) than your configured MyFinancialFlow account (${remoteManifest.approvedAccountEmail || remoteManifest.approvedAccountId}). Syncing with a different account would NOT access your existing data. Please sign in with the correct account, or contact support/reset if you intend to start fresh.`
           );
         }
 

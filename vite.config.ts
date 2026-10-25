@@ -15,8 +15,8 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
       manifest: {
-        name: 'FinanceFlow - Smart Personal Finance',
-        short_name: 'FinanceFlow',
+        name: 'MyFinancialFlow - Smart Personal Finance',
+        short_name: 'MyFinancialFlow',
         description: 'Lightweight, offline-first personal finance tracker with sync and smart insights',
         theme_color: '#0f172a',
         background_color: '#0f172a',

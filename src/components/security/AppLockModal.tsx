@@ -105,7 +105,7 @@ export const AppLockModal: React.FC<AppLockModalProps> = ({
         </div>
 
         <div>
-          <h2 className="text-xl font-black text-white tracking-tight">FinanceFlow Locked</h2>
+          <h2 className="text-xl font-black text-white tracking-tight">MyFinancialFlow Locked</h2>
           <p className="text-xs text-slate-400 mt-1">Enter your security PIN to access your financial ledger</p>
         </div>
 

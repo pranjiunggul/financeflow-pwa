@@ -442,7 +442,7 @@ export const AIProviderManager: React.FC<AIProviderManagerProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <p className="text-xs text-slate-400">
-              When a request is initiated, FinanceFlow queries the highest-priority healthy provider, and automatically rolls down on 429 quota or network errors.
+              When a request is initiated, MyFinancialFlow queries the highest-priority healthy provider, and automatically rolls down on 429 quota or network errors.
             </p>
             <button
               onClick={() => setIsAddPriorityModalOpen(true)}

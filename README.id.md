@@ -4,9 +4,9 @@
 > - Panduan Instalasi Lengkap: [INSTALLATION.id.md](file:///c:/Personal%20Finance/INSTALLATION.id.md) | [INSTALLATION.md](file:///c:/Personal%20Finance/INSTALLATION.md)
 > - Panduan Pengguna (User Guide): [TUTORIAL.md](file:///c:/Personal%20Finance/TUTORIAL.md) (ID) | [TUTORIAL.en.md](file:///c:/Personal%20Finance/TUTORIAL.en.md) (EN)
 
-# FinanceFlow — PWA Manajemen Keuangan Pribadi Cerdas & Offline-First
+# MyFinancialFlow — PWA Manajemen Keuangan Pribadi Cerdas & Offline-First
 
-FinanceFlow adalah aplikasi web progresif (PWA) yang mengutamakan privasi, bekerja sepenuhnya secara offline (offline-first), dan dirancang untuk mencatat keuangan pribadi, arus kas, portofolio aset & investasi, target tabungan, serta estimasi pajak penghasilan tanpa ketergantungan pada server database pihak ketiga (zero vendor lock-in).
+MyFinancialFlow adalah aplikasi web progresif (PWA) yang mengutamakan privasi, bekerja sepenuhnya secara offline (offline-first), dan dirancang untuk mencatat keuangan pribadi, arus kas, portofolio aset & investasi, target tabungan, serta estimasi pajak penghasilan tanpa ketergantungan pada server database pihak ketiga (zero vendor lock-in).
 
 Aplikasi ini memadukan penyimpanan database reaktif lokal di peramban (Dexie.js / IndexedDB), input transaksi multi-modal (suara, OCR struk belanja, chat asisten AI, bot Telegram), mesin AI failover 3-tingkat (Groq, Google Gemini, OpenRouter), serta sinkronisasi awan otomatis menggunakan Google Drive `appDataFolder` yang privat dan terenkripsi.
 
@@ -68,7 +68,7 @@ Aplikasi ini memadukan penyimpanan database reaktif lokal di peramban (Dexie.js 
 ### 8. Motivasi & Gamifikasi
 - **Skor Kesehatan Finansial (0–100)**: Penilaian dinamis berdasarkan rasio tabungan, disiplin anggaran, ketersediaan dana darurat, dan konsistensi pencatatan.
 - **Streak & Lencana Prestasi**: Melacak streak pencatatan harian berturut-turut dan membuka berbagai lencana pencapaian.
-- **FinanceFlow Wrapped**: Tampilan visual interaktif kilas balik pengeluaran bulanan dan tahunan bergaya Spotify Wrapped.
+- **MyFinancialFlow Wrapped**: Tampilan visual interaktif kilas balik pengeluaran bulanan dan tahunan bergaya Spotify Wrapped.
 
 ---
 

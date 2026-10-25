@@ -3,15 +3,15 @@
 > - Baca topologi jaringan & deployment ini dalam **Bahasa Indonesia**: [TOPOLOGY.id.md](file:///c:/Personal%20Finance/TOPOLOGY.id.md)
 > - Return to Main Documentation: [README.md](file:///c:/Personal%20Finance/README.md)
 
-# FinanceFlow — Network & Deployment Topology
+# MyFinancialFlow — Network & Deployment Topology
 
-This document describes the deployment topology, network boundaries, edge infrastructure, and offline-versus-online operational capabilities of FinanceFlow.
+This document describes the deployment topology, network boundaries, edge infrastructure, and offline-versus-online operational capabilities of MyFinancialFlow.
 
 ---
 
 ## 1. Network Topology Overview
 
-FinanceFlow operates on a decentralized, client-centric network topology. There is no monolithic application server or hosted backend database. All critical operations take place on the user's client hardware, with lightweight edge workers and Google Drive providing auxiliary cloud services.
+MyFinancialFlow operates on a decentralized, client-centric network topology. There is no monolithic application server or hosted backend database. All critical operations take place on the user's client hardware, with lightweight edge workers and Google Drive providing auxiliary cloud services.
 
 ```mermaid
 graph TD
@@ -96,7 +96,7 @@ graph TD
 
 ## 3. Offline vs. Online Capability Matrix
 
-FinanceFlow is fundamentally designed to function indefinitely without an internet connection. The table below outlines operational capabilities in offline vs. online states:
+MyFinancialFlow is fundamentally designed to function indefinitely without an internet connection. The table below outlines operational capabilities in offline vs. online states:
 
 | Feature / Subsystem | Offline Capability | Online Capability | Fallback Behavior When Offline |
 | :--- | :---: | :---: | :--- |
@@ -122,7 +122,7 @@ FinanceFlow is fundamentally designed to function indefinitely without an intern
 ```mermaid
 flowchart LR
     subgraph TrustedZone ["Zero-Trust Client Zone"]
-        PWA["FinanceFlow PWA\n(IndexedDB + Web Crypto)"]
+        PWA["MyFinancialFlow PWA\n(IndexedDB + Web Crypto)"]
         Keys["API Keys, PIN Hash, Bank Accounts\n(Stored Encrypted Client-Side)"]
     end
 

@@ -134,7 +134,7 @@ export const TaxEstimatorView: React.FC<TaxEstimatorViewProps> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `Lembar_Kerja_PPh_${selectedYear}_FinanceFlow.csv`;
+    a.download = `Lembar_Kerja_PPh_${selectedYear}_MyFinancialFlow.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };

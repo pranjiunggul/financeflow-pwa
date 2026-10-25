@@ -459,7 +459,7 @@ export function generateTaxWorksheetPrintableHtml(
   </table>
 
   <div class="footer">
-    Dicetak dari FinanceFlow Personal Finance PWA | Dokumen ini adalah lembar kerja pribadi dan tidak sah sebagai bukti pelaporan SPT resmi.
+    Dicetak dari MyFinancialFlow Personal Finance PWA | Dokumen ini adalah lembar kerja pribadi dan tidak sah sebagai bukti pelaporan SPT resmi.
   </div>
 </body>
 </html>`;

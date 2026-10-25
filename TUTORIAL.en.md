@@ -3,11 +3,11 @@
 > - Read this guide in **Bahasa Indonesia**: [TUTORIAL.md](file:///c:/Personal%20Finance/TUTORIAL.md)
 > - Return to Main Documentation: [README.md](file:///c:/Personal%20Finance/README.md)
 
-# FinanceFlow — Complete User Guide & Tutorial
+# MyFinancialFlow — Complete User Guide & Tutorial
 
-Welcome to **FinanceFlow**! FinanceFlow is an offline-first, private, fast personal finance tracker and wealth management Progressive Web App (PWA). There are no monthly subscription fees, no ads, and no central tracking servers. Your financial data lives 100% inside your own device browser.
+Welcome to **MyFinancialFlow**! MyFinancialFlow is an offline-first, private, fast personal finance tracker and wealth management Progressive Web App (PWA). There are no monthly subscription fees, no ads, and no central tracking servers. Your financial data lives 100% inside your own device browser.
 
-This comprehensive guide walks you through every feature and workflow in FinanceFlow.
+This comprehensive guide walks you through every feature and workflow in MyFinancialFlow.
 
 ---
 
@@ -32,7 +32,7 @@ This comprehensive guide walks you through every feature and workflow in Finance
 
 ## 1. Initial Setup: Master PIN & Starting Accounts
 
-When you first launch FinanceFlow, spend 2 minutes configuring your financial baseline:
+When you first launch MyFinancialFlow, spend 2 minutes configuring your financial baseline:
 
 ### 1.1 Configure Security PIN
 1. Open the **Settings** menu.
@@ -54,7 +54,7 @@ Navigate to the **Accounts** tab to create the accounts you use day-to-day:
 
 ## 2. Daily Multi-Modal Transaction Logging
 
-FinanceFlow offers multiple flexible input methods tailored for any situation:
+MyFinancialFlow offers multiple flexible input methods tailored for any situation:
 
 ### 2.1 Quick-Add Entry
 - Tap the **+** button in the bottom navigation or press keyboard shortcut **N**.
@@ -97,7 +97,7 @@ When your hands are busy driving or carrying groceries:
 Record transactions quickly on Telegram without opening your browser:
 1. Open your configured private Telegram bot (see [INSTALLATION.md](file:///c:/Personal%20Finance/INSTALLATION.md)).
 2. Send a text message or forward a receipt image to your bot.
-3. Whenever you open FinanceFlow, check the **Inbox** tab. Your Telegram messages are buffered securely, ready to be approved in one click.
+3. Whenever you open MyFinancialFlow, check the **Inbox** tab. Your Telegram messages are buffered securely, ready to be approved in one click.
 
 ---
 
@@ -113,7 +113,7 @@ The **Goals** tab enables you to set and achieve tangible savings targets (e.g. 
    - **Manual Contribution Mode**: Highly recommended if your account is also used for everyday living expenses (groceries, bills, salary deposits). In this mode, you log explicit deposits toward the goal, preventing misleading swings from regular spending.
 
 ### 3.2 90-Day Velocity Projections
-Unlike simple linear progress bars, FinanceFlow dynamically measures your **net saving velocity over the past 90 days**:
+Unlike simple linear progress bars, MyFinancialFlow dynamically measures your **net saving velocity over the past 90 days**:
 - If you save an average of Rp 1,500,000 per month, the engine projects the exact realistic date you will hit 100%.
 - If your recent saving rate slows down, the color-coded badge updates to warn that the goal *Needs Attention*.
 
@@ -139,7 +139,7 @@ Your total wealth is rarely just cash in checking accounts. The **Investments** 
 - Historical valuation logs are preserved, generating visual performance charts and tracking unrealized gains and losses over time.
 
 ### 4.3 Integrated Net Worth
-FinanceFlow combines all financial pillars into one real-time metric:
+MyFinancialFlow combines all financial pillars into one real-time metric:
 $$\text{Net Worth} = \text{Liquid Cash} + \text{Investment Asset Valuations} - \text{Outstanding Debt Balances}$$
 
 ---
@@ -207,7 +207,7 @@ Log expenses on your phone during the day and review analytics on your desktop a
 
 ### 7.2 Safety Architecture
 - **Hidden App Data Folder**: All backups live in Google Drive's restricted `appDataFolder`. Backups are completely hidden from standard Google Drive file lists and isolated from third-party tools.
-- **Google Account Lock**: For security, FinanceFlow locks synchronization to the first Google account authenticated on a device. Connecting an unauthorized alternate account halts sync immediately to prevent data mixing.
+- **Google Account Lock**: For security, MyFinancialFlow locks synchronization to the first Google account authenticated on a device. Connecting an unauthorized alternate account halts sync immediately to prevent data mixing.
 - **Duplicate Detection**: If you record the same transaction offline on two devices, the fuzzy-matching engine detects the duplicate and prompts you to resolve it cleanly.
 
 ---
@@ -218,7 +218,7 @@ You maintain absolute ownership and sovereignty over your data.
 
 ### 8.1 Full Archive Export (ZIP)
 - Under **Settings** > **Data Management**, select **Export Full Data (ZIP)**.
-- FinanceFlow packages your complete JSON database alongside all original receipt image attachments into a single standard `.zip` file.
+- MyFinancialFlow packages your complete JSON database alongside all original receipt image attachments into a single standard `.zip` file.
 - The archive can be unpacked and viewed on any operating system without special software.
 
 ### 8.2 Opt-In Anonymous Crash Telemetry
@@ -236,8 +236,8 @@ If you wish to reset your account or permanently delete your financial footprint
 
 ## 9. Frequently Asked Questions & Troubleshooting (FAQ)
 
-### Q: Do I need an internet connection to use FinanceFlow?
-> **A:** Absolutely not! FinanceFlow is offline-first. You can record transactions, generate charts, calculate taxes, and project cash flows completely offline. Changes automatically queue and synchronize to Google Drive once connectivity is restored.
+### Q: Do I need an internet connection to use MyFinancialFlow?
+> **A:** Absolutely not! MyFinancialFlow is offline-first. You can record transactions, generate charts, calculate taxes, and project cash flows completely offline. Changes automatically queue and synchronize to Google Drive once connectivity is restored.
 
 ### Q: What should I do if I forget my security PIN?
 > **A:** If Biometric Unlock was previously enabled, you can unlock using your fingerprint or Face ID and update your PIN in Settings. If biometrics are unavailable and the PIN is lost, you can perform a local reset and restore your ledger from your connected Google Drive backup.
@@ -250,4 +250,4 @@ If you wish to reset your account or permanently delete your financial footprint
 
 ---
 
-*Take control of your financial future with privacy, precision, and confidence using FinanceFlow!*
+*Take control of your financial future with privacy, precision, and confidence using MyFinancialFlow!*

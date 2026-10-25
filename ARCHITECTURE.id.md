@@ -3,15 +3,15 @@
 > - Read this system architecture in **English**: [ARCHITECTURE.md](file:///c:/Personal%20Finance/ARCHITECTURE.md)
 > - Kembali ke Dokumentasi Utama: [README.id.md](file:///c:/Personal%20Finance/README.id.md)
 
-# FinanceFlow — Arsitektur Sistem & Spesifikasi Teknis
+# MyFinancialFlow — Arsitektur Sistem & Spesifikasi Teknis
 
-Dokumen ini menguraikan arsitektur perangkat lunak, model data, protokol sinkronisasi, infrastruktur komputasi edge, dan batasan keamanan yang diimplementasikan di FinanceFlow.
+Dokumen ini menguraikan arsitektur perangkat lunak, model data, protokol sinkronisasi, infrastruktur komputasi edge, dan batasan keamanan yang diimplementasikan di MyFinancialFlow.
 
 ---
 
 ## 1. Ikhtisar Arsitektur Tingkat Tinggi
 
-FinanceFlow menerapkan arsitektur **Offline-First, Zero-Backend**. Aplikasi utama berjalan sepenuhnya di dalam peramban (browser) pengguna, dengan database IndexedDB lokal sebagai sumber kebenaran data (*source of truth*). Layanan cloud eksternal (Google Drive, Cloudflare Workers, API AI) hanya berfungsi sebagai simpul edge pendukung dan bukan server database terpusat.
+MyFinancialFlow menerapkan arsitektur **Offline-First, Zero-Backend**. Aplikasi utama berjalan sepenuhnya di dalam peramban (browser) pengguna, dengan database IndexedDB lokal sebagai sumber kebenaran data (*source of truth*). Layanan cloud eksternal (Google Drive, Cloudflare Workers, API AI) hanya berfungsi sebagai simpul edge pendukung dan bukan server database terpusat.
 
 ```mermaid
 graph TD
@@ -59,7 +59,7 @@ graph TD
 
 ## 2. Arsitektur Database (Dexie Skema v8)
 
-FinanceFlow mengelola seluruh data lokal menggunakan **Dexie.js 4.0** di atas IndexedDB peramban. Database telah berevolusi hingga **Skema Versi 8**, memuat **23 tabel relasional** lengkap dengan migrasi otomatis bertingkat yang menjamin data pengguna tidak hilang saat versi aplikasi diperbarui.
+MyFinancialFlow mengelola seluruh data lokal menggunakan **Dexie.js 4.0** di atas IndexedDB peramban. Database telah berevolusi hingga **Skema Versi 8**, memuat **23 tabel relasional** lengkap dengan migrasi otomatis bertingkat yang menjamin data pengguna tidak hilang saat versi aplikasi diperbarui.
 
 ### 2.1 Peta Lengkap Tabel & Indeks Database
 
@@ -131,13 +131,13 @@ Mesin pajak mengimplementasikan aturan ini melalui kolom opsional: `otherIncomeT
 
 ## 4. Protokol Sinkronisasi Cloud & Keamanan Multi-Perangkat
 
-FinanceFlow tidak menggunakan server database terpusat, melainkan langsung menyinkronkan data ke Google Drive pengguna melalui folder terisolasi `appDataFolder`.
+MyFinancialFlow tidak menggunakan server database terpusat, melainkan langsung menyinkronkan data ke Google Drive pengguna melalui folder terisolasi `appDataFolder`.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor Pengguna
-    participant PWA as Klien FinanceFlow
+    participant PWA as Klien MyFinancialFlow
     participant IDB as IndexedDB (Lokal)
     participant GDrive as Google Drive (appDataFolder)
 

@@ -3,15 +3,15 @@
 > - Read this network & deployment topology in **English**: [TOPOLOGY.md](file:///c:/Personal%20Finance/TOPOLOGY.md)
 > - Kembali ke Dokumentasi Utama: [README.id.md](file:///c:/Personal%20Finance/README.id.md)
 
-# FinanceFlow — Topologi Jaringan & Deployment
+# MyFinancialFlow — Topologi Jaringan & Deployment
 
-Dokumen ini menjelaskan topologi deployment, batasan jaringan, infrastruktur edge, serta matriks kapabilitas offline vs online pada FinanceFlow.
+Dokumen ini menjelaskan topologi deployment, batasan jaringan, infrastruktur edge, serta matriks kapabilitas offline vs online pada MyFinancialFlow.
 
 ---
 
 ## 1. Ikhtisar Topologi Jaringan
 
-FinanceFlow beroperasi dengan model desentralisasi berpusat pada klien (client-centric). Tidak ada server aplikasi monolitik maupun database backend terpusat. Semua operasi komputasi krusial dieksekusi langsung pada perangkat pengguna, dengan bantuan simpul Cloudflare Workers dan Google Drive sebagai pendukung cloud.
+MyFinancialFlow beroperasi dengan model desentralisasi berpusat pada klien (client-centric). Tidak ada server aplikasi monolitik maupun database backend terpusat. Semua operasi komputasi krusial dieksekusi langsung pada perangkat pengguna, dengan bantuan simpul Cloudflare Workers dan Google Drive sebagai pendukung cloud.
 
 ```mermaid
 graph TD
@@ -96,7 +96,7 @@ graph TD
 
 ## 3. Matriks Kapabilitas Offline vs. Online
 
-FinanceFlow dirancang agar dapat terus digunakan tanpa koneksi internet. Tabel berikut merinci ketersediaan fitur dalam kondisi offline maupun online:
+MyFinancialFlow dirancang agar dapat terus digunakan tanpa koneksi internet. Tabel berikut merinci ketersediaan fitur dalam kondisi offline maupun online:
 
 | Fitur / Sub-sistem | Kapabilitas Offline | Kapabilitas Online | Perilaku Saat Offline |
 | :--- | :---: | :---: | :--- |
@@ -122,7 +122,7 @@ FinanceFlow dirancang agar dapat terus digunakan tanpa koneksi internet. Tabel b
 ```mermaid
 flowchart LR
     subgraph TrustedZone ["Zona Klien Terpercaya (Zero-Trust)"]
-        PWA["FinanceFlow PWA\n(IndexedDB + Web Crypto)"]
+        PWA["MyFinancialFlow PWA\n(IndexedDB + Web Crypto)"]
         Keys["API Key, Hash PIN, Saldo Rekening\n(Tersimpan Terenkripsi di Klien)"]
     end
 

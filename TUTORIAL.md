@@ -3,11 +3,11 @@
 > - Baca panduan ini dalam **Bahasa Inggris / Read in English**: [TUTORIAL.en.md](file:///c:/Personal%20Finance/TUTORIAL.en.md)
 > - Kembali ke Dokumentasi Utama: [README.id.md](file:///c:/Personal%20Finance/README.id.md)
 
-# Panduan Lengkap Pengguna FinanceFlow
+# Panduan Lengkap Pengguna MyFinancialFlow
 
-Selamat datang di **FinanceFlow**! FinanceFlow adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang bekerja secara offline-first, cepat, privat, dan tanpa biaya langganan. Data keuangan Anda 100% tersimpan aman di browser perangkat Anda sendiri.
+Selamat datang di **MyFinancialFlow**! MyFinancialFlow adalah aplikasi pencatatan dan pengelolaan keuangan pribadi yang bekerja secara offline-first, cepat, privat, dan tanpa biaya langganan. Data keuangan Anda 100% tersimpan aman di browser perangkat Anda sendiri.
 
-Buku panduan ini disusun secara praktis dan ramah pengguna untuk memandu Anda memanfaatkan seluruh fitur FinanceFlow secara optimal.
+Buku panduan ini disusun secara praktis dan ramah pengguna untuk memandu Anda memanfaatkan seluruh fitur MyFinancialFlow secara optimal.
 
 ---
 
@@ -32,7 +32,7 @@ Buku panduan ini disusun secara praktis dan ramah pengguna untuk memandu Anda me
 
 ## 1. Langkah Awal: Pengamanan PIN & Akun Keuangan
 
-Saat pertama kali membuka FinanceFlow, luangkan waktu 2 menit untuk menyiapkan pondasi keuangan Anda:
+Saat pertama kali membuka MyFinancialFlow, luangkan waktu 2 menit untuk menyiapkan pondasi keuangan Anda:
 
 ### 1.1 Pasang PIN Pengaman
 1. Buka menu **Pengaturan (Settings)**.
@@ -54,7 +54,7 @@ Buka tab **Akun (Accounts)** untuk mendaftarkan dompet dan rekening yang aktif A
 
 ## 2. Pencatatan Transaksi Sehari-Hari (Multi-Modal)
 
-FinanceFlow menyediakan beragam cara fleksibel untuk mencatat pengeluaran dan pemasukan sesuai kenyamanan Anda.
+MyFinancialFlow menyediakan beragam cara fleksibel untuk mencatat pengeluaran dan pemasukan sesuai kenyamanan Anda.
 
 ### 2.1 Formulir Input Cepat (Quick-Add)
 - Klik tombol **+** di pojok bawah atau tekan tombol shortcut keyboard **N**.
@@ -97,7 +97,7 @@ Saat tangan sedang sibuk menyetir atau membawa belanjaan:
 Catat transaksi dari aplikasi Telegram tanpa perlu membuka browser:
 1. Buka bot Telegram pribadi Anda yang telah disiapkan (lihat panduan [INSTALLATION.id.md](file:///c:/Personal%20Finance/INSTALLATION.id.md)).
 2. Kirim pesan chat biasa atau kirim foto struk ke bot Anda.
-3. Buka tab **Inbox** di FinanceFlow saat santai. Seluruh catatan dari Telegram akan masuk ke antrean untuk Anda setujui dalam 1 klik.
+3. Buka tab **Inbox** di MyFinancialFlow saat santai. Seluruh catatan dari Telegram akan masuk ke antrean untuk Anda setujui dalam 1 klik.
 
 ---
 
@@ -113,7 +113,7 @@ Tab **Goals** membantu Anda merencanakan dan mewujudkan target impian (misalnya 
    - **Mode Setoran Manual (Manual Contribution)**: *Sangat disarankan* jika rekening yang digunakan juga dipakai untuk transaksi sehari-hari (terima gaji, bayar tagihan). Dengan mode ini, Anda menyetor progres secara sadar sehingga tidak terganggu oleh fluktuasi uang belanja harian.
 
 ### 3.2 Memahami Proyeksi Kecepatan (90-Day Velocity)
-FinanceFlow tidak hanya menampilkan persentase statis, tetapi juga menghitung **kecepatan menabung riil Anda selama 90 hari terakhir**:
+MyFinancialFlow tidak hanya menampilkan persentase statis, tetapi juga menghitung **kecepatan menabung riil Anda selama 90 hari terakhir**:
 - Jika rata-rata Anda berhasil menyisihkan Rp 1.500.000 per bulan, sistem akan memproyeksikan tanggal realistis kapan target Anda akan tercapai.
 - Jika kecepatan menabung melambat, indikator warna akan memberi tahu apakah target Anda *On Track* (sesuai jadwal) atau *Needs Attention* (perlu perhatian).
 
@@ -134,12 +134,12 @@ Kekayaan Anda tidak hanya tersimpan dalam bentuk uang tunai di bank. Tab **Inves
 3. Masukkan harga modal beli awal (*cost basis*).
 
 ### 4.2 Pembaruan Valuasi (Harga Pasar)
-- **Aset Kripto**: Cukup tekan tombol **Update Harga Kripto**. FinanceFlow akan mengambil harga pasar terkini secara langsung via CoinGecko.
+- **Aset Kripto**: Cukup tekan tombol **Update Harga Kripto**. MyFinancialFlow akan mengambil harga pasar terkini secara langsung via CoinGecko.
 - **Saham, Emas & Properti**: Klik tombol **Perbarui Nilai** secara berkala (misal: sebulan sekali) untuk memasukkan nilai pasar terkini.
 - Sistem akan otomatis membentuk grafik garis riwayat nilai aset dari waktu ke waktu serta menghitung persentase keuntungan/kerugian (*unrealized gain/loss*).
 
 ### 4.3 Total Kekayaan Bersih (Net Worth)
-FinanceFlow menggabungkan seluruh komponen finansial Anda dalam satu angka terpadu:
+MyFinancialFlow menggabungkan seluruh komponen finansial Anda dalam satu angka terpadu:
 $$\text{Total Kekayaan Bersih} = \text{Kas di Bank \& Tunai} + \text{Valuasi Seluruh Investasi} - \text{Sisa Saldo Utang}$$
 
 ---
@@ -208,14 +208,14 @@ Ingin mencatat transaksi di HP Android/iPhone di siang hari lalu mengecek lapora
 
 ### 7.2 Fitur Keamanan Sinkronisasi
 - **Folder Tersembunyi (appDataFolder)**: Data sinkronisasi disimpan di folder sistem rahasia Google Drive Anda. Folder ini tidak akan mengotori Google Drive utama Anda dan tidak bisa diakses oleh aplikasi pihak ketiga manapun.
-- **Kunci Akun Google (Account Lock)**: Untuk keamanan tingkat tinggi, FinanceFlow mengunci database pada akun Google pertama yang Anda hubungkan. Jika ada orang lain mencoba menghubungkan akun Google berbeda ke perangkat Anda, sinkronisasi otomatis ditolak untuk mencegah percampuran data.
+- **Kunci Akun Google (Account Lock)**: Untuk keamanan tingkat tinggi, MyFinancialFlow mengunci database pada akun Google pertama yang Anda hubungkan. Jika ada orang lain mencoba menghubungkan akun Google berbeda ke perangkat Anda, sinkronisasi otomatis ditolak untuk mencegah percampuran data.
 - **Deteksi Transaksi Kembar (Sync Duplicates)**: Jika Anda sempat mencatat transaksi yang sama di dua perangkat saat offline, sistem akan mendeteksi kemiripannya secara cerdas dan menampilkannya di tab *Duplikat* agar Anda bisa menghapus salah satunya dengan mudah.
 
 ---
 
 ## 8. Privasi, Cadangan & Hapus Data (Right-to-be-Forgotten)
 
-FinanceFlow menganut filosofi kedaulatan data penuh milik pengguna.
+MyFinancialFlow menganut filosofi kedaulatan data penuh milik pengguna.
 
 ### 8.1 Ekspor Cadangan Lengkap (ZIP)
 - Kapan saja Anda ingin menyimpan salinan mandiri, buka **Pengaturan** > **Manajemen Data** > **Ekspor Data Penuh (ZIP)**.
@@ -237,8 +237,8 @@ Jika Anda ingin berhenti menggunakan aplikasi atau ingin mereset buku kas dari n
 
 ## 9. Tanya Jawab & Solusi Masalah (FAQ & Troubleshooting)
 
-### Q: Apakah saya perlu koneksi internet setiap kali membuka FinanceFlow?
-> **A:** Tidak! FinanceFlow bekerja 100% secara offline. Anda bisa mencatat transaksi, melihat laporan grafik, menghitung proyeksi kas, dan menghitung estimasi pajak di tengah hutan tanpa sinyal sekalipun. Saat perangkat kembali terhubung internet, sinkronisasi ke Google Drive akan berjalan otomatis.
+### Q: Apakah saya perlu koneksi internet setiap kali membuka MyFinancialFlow?
+> **A:** Tidak! MyFinancialFlow bekerja 100% secara offline. Anda bisa mencatat transaksi, melihat laporan grafik, menghitung proyeksi kas, dan menghitung estimasi pajak di tengah hutan tanpa sinyal sekalipun. Saat perangkat kembali terhubung internet, sinkronisasi ke Google Drive akan berjalan otomatis.
 
 ### Q: Apa yang harus dilakukan jika saya lupa PIN pengaman aplikasi?
 > **A:** Jika Anda mengaktifkan autentikasi biometrik, Anda bisa membuka aplikasi menggunakan sidik jari atau Face ID lalu mengganti PIN di menu Pengaturan. Jika biometrik tidak aktif dan PIN lupa, Anda dapat mereset database lokal dan memulihkan kembali data Anda dengan login Google Drive Sync yang telah terpasang sebelumnya.
@@ -251,4 +251,4 @@ Jika Anda ingin berhenti menggunakan aplikasi atau ingin mereset buku kas dari n
 
 ---
 
-*Selamat mengelola keuangan pribadi dengan lebih bijak, tenang, dan cerdas bersama FinanceFlow!*
+*Selamat mengelola keuangan pribadi dengan lebih bijak, tenang, dan cerdas bersama MyFinancialFlow!*

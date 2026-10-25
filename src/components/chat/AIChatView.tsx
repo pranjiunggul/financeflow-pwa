@@ -45,7 +45,7 @@ interface AIChatViewProps {
 const INITIAL_GREETING: ChatMessage = {
   id: 'msg_initial',
   role: 'assistant',
-  content: `Hello! I'm your FinanceFlow Assistant. You can ask me to:
+  content: `Hello! I'm your MyFinancialFlow Assistant. You can ask me to:
 - **Log or modify transactions** ("*Makan siang 45rb cash*", "*Edit coffee yesterday to 50k*", "*Delete last taxi ride*")
 - **Search transaction history** ("*How much did I spend on food this month?*", "*Show transactions above 1M*")
 - **Generate reports** ("*Show October cash flow*", "*Check my budget limits*")
@@ -256,7 +256,7 @@ export const AIChatView: React.FC<AIChatViewProps> = ({
           </div>
           <div>
             <h2 className="text-sm sm:text-base font-extrabold text-white flex items-center space-x-2">
-              <span>FinanceFlow AI Copilot</span>
+              <span>MyFinancialFlow AI Copilot</span>
               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                 {settings?.aiProvider || 'Offline Tier-1'}
               </span>

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# FinanceFlow — Skrip Pemasangan & Persiapan Otomatis (macOS & Linux)
+# MyFinancialFlow — Skrip Pemasangan & Persiapan Otomatis (macOS & Linux)
 # ==============================================================================
 # Aplikasi Manajemen Keuangan Pribadi Offline-First, Privat & Cerdas
 # ==============================================================================
@@ -15,7 +15,7 @@ CYAN="\033[1;36m"
 RESET="\033[0m"
 
 echo -e "${CYAN}==============================================================================${RESET}"
-echo -e "${BOLD} FinanceFlow — Skrip Pemasangan Otomatis (One-Click Setup)${RESET}"
+echo -e "${BOLD} MyFinancialFlow — Skrip Pemasangan Otomatis (One-Click Setup)${RESET}"
 echo -e "${CYAN}==============================================================================${RESET}"
 echo -e " Aplikasi Manajemen Keuangan Pribadi Offline-First, Privat & Cerdas"
 echo -e "${CYAN}==============================================================================${RESET}"
@@ -105,7 +105,7 @@ if [ $? -ne 0 ]; then
     echo -e "${RED}[GAGAL] npm install mengalami kendala! Periksa koneksi internet Anda.${RESET}"
     exit 1
 fi
-echo -e "${GREEN}[OK] Seluruh paket dependensi FinanceFlow berhasil dipasang.${RESET}"
+echo -e "${GREEN}[OK] Seluruh paket dependensi MyFinancialFlow berhasil dipasang.${RESET}"
 echo ""
 
 # -----------------------------------------------------------------------------
@@ -122,7 +122,7 @@ fi
 echo ""
 echo -e "${CYAN}==============================================================================${RESET}"
 echo -e "${BOLD}[INFO ARSITEKTUR ZERO-BUILD-TIME]${RESET}"
-echo "FinanceFlow TIDAK mengharuskan Anda mengisi file .env sebelum build!"
+echo "MyFinancialFlow TIDAK mengharuskan Anda mengisi file .env sebelum build!"
 echo "Seluruh kredensial & API key diatur langsung oleh Anda di dalam aplikasi browser"
 echo "melalui menu Settings (Pengaturan) dan disimpan aman di IndexedDB perangkat Anda."
 echo ""
@@ -164,7 +164,7 @@ echo ""
 # [6/7] Opsi Deployment Cloudflare Workers (Relay & Telemetri)
 # -----------------------------------------------------------------------------
 echo -e "${BLUE}[6/7] Opsi Deployment Cloudflare Workers...${RESET}"
-echo "FinanceFlow memiliki dua Cloudflare Worker:"
+echo "MyFinancialFlow memiliki dua Cloudflare Worker:"
 echo "  1. financeflow-relay      : Relay webhook penampung pesan Telegram Bot"
 echo "  2. financeflow-telemetry  : Pelapor crash error privat dengan auto-TTL 30 hari"
 echo ""

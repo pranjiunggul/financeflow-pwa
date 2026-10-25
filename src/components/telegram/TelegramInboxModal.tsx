@@ -193,7 +193,7 @@ export const TelegramInboxModal: React.FC<TelegramInboxModalProps> = ({
                   <span>Zero-Knowledge Privacy Principle</span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  FinanceFlow never runs OCR or AI parsing on third-party servers. Your AI keys never leave your device.
+                  MyFinancialFlow never runs OCR or AI parsing on third-party servers. Your AI keys never leave your device.
                   Telegram relays purely pass raw text/photos into your encrypted inbox, where your local browser parses them.
                 </p>
               </div>

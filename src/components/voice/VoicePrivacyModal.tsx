@@ -53,7 +53,7 @@ export const VoicePrivacyModal: React.FC<VoicePrivacyModalProps> = ({
           <div className="p-3.5 bg-amber-500/10 border border-amber-500/20 rounded-xl flex items-start space-x-2.5 text-amber-300">
             <ShieldAlert className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
             <span>
-              <strong>Privacy Notice:</strong> Unlike the rest of FinanceFlow, which operates 100% offline and zero-knowledge, your browser's Web Speech API may transmit audio to your browser vendor's servers (e.g. Google's servers in Chrome, Apple's servers in Safari) for transcription.
+              <strong>Privacy Notice:</strong> Unlike the rest of MyFinancialFlow, which operates 100% offline and zero-knowledge, your browser's Web Speech API may transmit audio to your browser vendor's servers (e.g. Google's servers in Chrome, Apple's servers in Safari) for transcription.
             </span>
           </div>
 
@@ -62,7 +62,7 @@ export const VoicePrivacyModal: React.FC<VoicePrivacyModalProps> = ({
           </p>
 
           <p className="text-slate-400">
-            The transcribed text is then parsed directly on your device using FinanceFlow's local offline NLU engine.
+            The transcribed text is then parsed directly on your device using MyFinancialFlow's local offline NLU engine.
           </p>
 
           <p className="text-slate-400">

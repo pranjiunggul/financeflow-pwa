@@ -84,7 +84,7 @@ export const AnnualWrappedModal: React.FC<AnnualWrappedModalProps> = ({
     // 2. Header
     ctx.fillStyle = '#94a3b8';
     ctx.font = '600 32px sans-serif';
-    ctx.fillText('FINANCEFLOW WRAPPED', 80, 120);
+    ctx.fillText('MYFINANCIALFLOW WRAPPED', 80, 120);
 
     ctx.fillStyle = '#ffffff';
     ctx.font = '800 68px sans-serif';
@@ -190,7 +190,7 @@ export const AnnualWrappedModal: React.FC<AnnualWrappedModalProps> = ({
 
     // Download PNG
     const link = document.createElement('a');
-    link.download = `FinanceFlow_Wrapped_${stats.periodYear}.png`;
+    link.download = `MyFinancialFlow_Wrapped_${stats.periodYear}.png`;
     link.href = canvas.toDataURL('image/png');
     link.click();
   };
@@ -203,7 +203,7 @@ export const AnnualWrappedModal: React.FC<AnnualWrappedModalProps> = ({
           <div className="flex items-center gap-2">
             <Sparkles className="w-5 h-5 text-indigo-400 animate-spin" />
             <span className="text-xs uppercase tracking-widest font-bold text-indigo-300">
-              FinanceFlow Wrapped
+              MyFinancialFlow Wrapped
             </span>
           </div>
 
@@ -431,7 +431,7 @@ export const AnnualWrappedModal: React.FC<AnnualWrappedModalProps> = ({
                   ) : (
                     <div className="p-6 rounded-2xl bg-white/5 border border-white/10 text-gray-300 text-xs">
                       <p>
-                        This is your first tracked year in FinanceFlow! Next year you'll see deep
+                        This is your first tracked year in MyFinancialFlow! Next year you'll see deep
                         YoY velocity comparisons here.
                       </p>
                     </div>

@@ -3,9 +3,9 @@
 > - Baca panduan instalasi ini dalam **Bahasa Indonesia**: [INSTALLATION.id.md](file:///c:/Personal%20Finance/INSTALLATION.id.md)
 > - Return to Main Documentation: [README.md](file:///c:/Personal%20Finance/README.md)
 
-# FinanceFlow — Complete Installation & Deployment Guide
+# MyFinancialFlow — Complete Installation & Deployment Guide
 
-This guide provides end-to-end instructions for installing, configuring, running locally, and deploying FinanceFlow across all components:
+This guide provides end-to-end instructions for installing, configuring, running locally, and deploying MyFinancialFlow across all components:
 1. Prerequisites
 2. Local Development Setup (Zero-Build-Time `.env`)
 3. Google Drive Cloud Sync Setup (OAuth 2.0 Web Client)
@@ -19,7 +19,7 @@ This guide provides end-to-end instructions for installing, configuring, running
 
 ## 1. Prerequisites
 
-Before setting up FinanceFlow, ensure your environment meets these requirements:
+Before setting up MyFinancialFlow, ensure your environment meets these requirements:
 
 | Tool | Minimum Version | Recommended | Notes |
 | :--- | :--- | :--- | :--- |
@@ -33,7 +33,7 @@ Before setting up FinanceFlow, ensure your environment meets these requirements:
 
 ## 2. Local Development Setup
 
-FinanceFlow is designed with a **Zero-Build-Time Configuration** architecture. You do not need to create or maintain a `.env` file to build, run, or test the application. All credentials, API keys, and endpoints are configured client-side inside the app's Settings page and stored securely in browser IndexedDB.
+MyFinancialFlow is designed with a **Zero-Build-Time Configuration** architecture. You do not need to create or maintain a `.env` file to build, run, or test the application. All credentials, API keys, and endpoints are configured client-side inside the app's Settings page and stored securely in browser IndexedDB.
 
 ### Quick Start: One-Click Setup Script (Recommended)
 
@@ -87,7 +87,7 @@ The Vite development server will start at `http://localhost:3000` (or the next a
 
 ### Step 2.3: Run the Integration Test Suite
 
-FinanceFlow includes 27 comprehensive automated test suites covering database migrations (v6, v7, v8), offline analytics, tax estimation engine, ledger reconciliation, AI failover, and telemetry persistence.
+MyFinancialFlow includes 27 comprehensive automated test suites covering database migrations (v6, v7, v8), offline analytics, tax estimation engine, ledger reconciliation, AI failover, and telemetry persistence.
 
 ```bash
 npm test
@@ -110,12 +110,12 @@ npm run preview
 
 ## 3. Google Drive Cloud Sync Setup
 
-FinanceFlow synchronizes encrypted backups using Google Drive's hidden `appDataFolder` scope (`https://www.googleapis.com/auth/drive.appdata`). Data stored here is completely invisible in the regular Google Drive user interface and can only be accessed by FinanceFlow.
+MyFinancialFlow synchronizes encrypted backups using Google Drive's hidden `appDataFolder` scope (`https://www.googleapis.com/auth/drive.appdata`). Data stored here is completely invisible in the regular Google Drive user interface and can only be accessed by MyFinancialFlow.
 
 ### Step 3.1: Create a Google Cloud Project
 1. Navigate to the [Google Cloud Console](https://console.cloud.google.com/).
 2. Click **Select a project** > **New Project**.
-3. Name your project (e.g. `FinanceFlow-Sync`) and click **Create**.
+3. Name your project (e.g. `MyFinancialFlow-Sync`) and click **Create**.
 
 ### Step 3.2: Enable Google Drive API
 1. In the Google Cloud Console, open the sidebar and navigate to **APIs & Services** > **Library**.
@@ -126,7 +126,7 @@ FinanceFlow synchronizes encrypted backups using Google Drive's hidden `appDataF
 1. Go to **APIs & Services** > **OAuth consent screen**.
 2. Select **External** (unless you are using a Google Workspace organization) and click **Create**.
 3. Fill in the required fields:
-   - **App name**: `FinanceFlow`
+   - **App name**: `MyFinancialFlow`
    - **User support email**: Your email address
    - **Developer contact information**: Your email address
 4. Under **Scopes**, click **Add or Remove Scopes**, add `https://www.googleapis.com/auth/drive.appdata`, and save.
@@ -136,15 +136,15 @@ FinanceFlow synchronizes encrypted backups using Google Drive's hidden `appDataF
 1. Navigate to **APIs & Services** > **Credentials**.
 2. Click **Create Credentials** > **OAuth client ID**.
 3. Set **Application type** to **Web application**.
-4. Set **Name** to `FinanceFlow Web Client`.
+4. Set **Name** to `MyFinancialFlow Web Client`.
 5. Under **Authorized JavaScript origins**, add:
    - `http://localhost:3000` (for local development)
    - `https://your-custom-domain.pages.dev` (your production Cloudflare Pages URL)
 6. Click **Create**.
 7. Copy the generated **Client ID** (formatted as `XXXXX.apps.googleusercontent.com`).
 
-### Step 3.5: Enter Client ID into FinanceFlow
-1. Open FinanceFlow in your browser.
+### Step 3.5: Enter Client ID into MyFinancialFlow
+1. Open MyFinancialFlow in your browser.
 2. Go to **Settings** > **Cloud Sync (Google Drive)**.
 3. Paste your Google Client ID into the field.
 4. Click **Sign in with Google**.
@@ -154,7 +154,7 @@ FinanceFlow synchronizes encrypted backups using Google Drive's hidden `appDataF
 
 ## 4. Cloudflare Workers Deployment
 
-FinanceFlow uses two lightweight, privacy-focused Cloudflare Workers:
+MyFinancialFlow uses two lightweight, privacy-focused Cloudflare Workers:
 1. `financeflow-relay`: Webhook relay for incoming Telegram messages, buffering unread messages in Cloudflare KV.
 2. `financeflow-telemetry`: Opt-in anonymous crash reporter storing sanitized diagnostic logs (7-field allow-list, zero financial data) with 30-day auto-TTL.
 
@@ -263,7 +263,7 @@ The Telegram Bot allows you to quickly log transactions on the go using natural 
 ### Step 6.1: Create Bot via @BotFather
 1. Open Telegram and search for `@BotFather`.
 2. Send `/newbot`.
-3. Give your bot a display name (e.g. `My FinanceFlow Bot`) and a unique username ending in `bot` (e.g. `my_financeflow_bot`).
+3. Give your bot a display name (e.g. `My MyFinancialFlow Bot`) and a unique username ending in `bot` (e.g. `my_financeflow_bot`).
 4. Copy the **HTTP API Bot Token** provided by BotFather (`1234567890:ABCdef...`).
 
 ### Step 6.2: Set Webhook to Your Relay Worker
@@ -273,8 +273,8 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://financ
 ```
 *Expected response: `{"ok":true,"result":true,"description":"Webhook was set"}`.*
 
-### Step 6.3: Configure in FinanceFlow Settings
-1. Open FinanceFlow PWA.
+### Step 6.3: Configure in MyFinancialFlow Settings
+1. Open MyFinancialFlow PWA.
 2. Go to **Settings** > **Telegram Bot**.
 3. Enter your **Bot Token**.
 4. Enter your **Relay URL** (`https://financeflow-relay.<your-subdomain>.workers.dev`).
@@ -286,13 +286,13 @@ curl "https://api.telegram.org/bot<YOUR_BOT_TOKEN>/setWebhook?url=https://financ
 2. Send `/auth <YOUR_PIN>` (e.g. `/auth 1234`).
 3. You will receive a confirmation message that your chat is authorized.
 4. Send any transaction: `Beli kopi 25000 pakai BCA` or upload a receipt photo.
-5. In FinanceFlow, the transaction will appear in your **Inbox** ready for approval.
+5. In MyFinancialFlow, the transaction will appear in your **Inbox** ready for approval.
 
 ---
 
 ## 7. AI Provider Setup
 
-FinanceFlow features a resilient **3-Tier AI Fallback Engine** with automatic failover, health checks, and rate-limit tracking. You can configure one, two, or all three providers:
+MyFinancialFlow features a resilient **3-Tier AI Fallback Engine** with automatic failover, health checks, and rate-limit tracking. You can configure one, two, or all three providers:
 
 | Provider | Recommended Model | Pricing / Free Tier | Key Benefits |
 | :--- | :--- | :--- | :--- |
@@ -301,7 +301,7 @@ FinanceFlow features a resilient **3-Tier AI Fallback Engine** with automatic fa
 | **OpenRouter** | Multi-model / Fallback | Pay-as-you-go | Universal failover gateway |
 
 ### How to Configure:
-1. Open FinanceFlow PWA.
+1. Open MyFinancialFlow PWA.
 2. Go to **Settings** > **AI Assistant & OCR**.
 3. Add your API keys:
    - **Groq API Key**: Obtain from [console.groq.com](https://console.groq.com/keys)
@@ -327,4 +327,4 @@ Follow this checklist to verify your installation is 100% operational:
 - [ ] **9. Offline Test**: Disconnect your internet connection. Create a transaction and edit a budget. Reconnect internet and observe automatic sync resolution.
 - [ ] **10. Export Backup**: Go to Settings > Data Management > Export Full Data (ZIP). Verify that a valid archive containing your JSON database and receipts is downloaded.
 
-You are now ready to track and optimize your finances with FinanceFlow!
+You are now ready to track and optimize your finances with MyFinancialFlow!

@@ -73,7 +73,7 @@ export async function getLocalDeviceInfo(): Promise<ConnectedDeviceInfo> {
   }
   const customName = settings?.deviceName || customStorageName;
 
-  const deviceName = customName && customName !== 'FinanceFlow Device'
+  const deviceName = customName && customName !== 'FinanceFlow Device' && customName !== 'MyFinancialFlow Device'
     ? customName
     : detection.defaultName;
 

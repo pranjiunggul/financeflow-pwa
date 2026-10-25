@@ -324,7 +324,7 @@ export function openPrintableReportStatement(
 <body>
   <div style="display:flex; justify-content:space-between; align-items:center;">
     <div>
-      <h1>FinanceFlow Statement</h1>
+      <h1>MyFinancialFlow Statement</h1>
       <div class="subtitle">Period: ${dateRangeLabel} • Currency: ${baseCurrency}</div>
     </div>
     <button onclick="window.print()" style="padding:8px 16px; background:#2563eb; color:white; border:none; border-radius:8px; cursor:pointer; font-weight:bold;">

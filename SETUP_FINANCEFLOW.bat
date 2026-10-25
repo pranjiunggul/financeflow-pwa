@@ -2,10 +2,10 @@
 chcp 65001 >nul
 setlocal enabledelayedexpansion
 
-title FinanceFlow — Skrip Pemasangan & Persiapan Otomatis
+title MyFinancialFlow — Skrip Pemasangan & Persiapan Otomatis
 
 echo ==============================================================================
-echo  FinanceFlow — Skrip Pemasangan Otomatis (One-Click Setup)
+echo  MyFinancialFlow — Skrip Pemasangan Otomatis (One-Click Setup)
 echo ==============================================================================
 echo  Aplikasi Manajemen Keuangan Pribadi Offline-First, Privat & Cerdas
 echo ==============================================================================
@@ -109,7 +109,7 @@ if exist "node_modules" (
     )
 )
 
-echo Memasang paket dependensi FinanceFlow...
+echo Memasang paket dependensi MyFinancialFlow...
 call npm install
 if %errorlevel% neq 0 (
     echo [GAGAL] Terjadi kesalahan saat menjalankan npm install!
@@ -117,7 +117,7 @@ if %errorlevel% neq 0 (
     pause
     exit /b 1
 )
-echo [OK] Seluruh dependensi FinanceFlow berhasil dipasang.
+echo [OK] Seluruh dependensi MyFinancialFlow berhasil dipasang.
 echo.
 
 :: -----------------------------------------------------------------------------
@@ -136,7 +136,7 @@ if not exist ".env" (
 echo.
 echo ==============================================================================
 echo [INFO ARSITEKTUR ZERO-BUILD-TIME]
-echo FinanceFlow TIDAK mengharuskan Anda mengisi file .env sebelum build!
+echo MyFinancialFlow TIDAK mengharuskan Anda mengisi file .env sebelum build!
 echo Seluruh kredensial & API key diisi langsung oleh Anda di dalam aplikasi browser
 echo melalui menu Settings (Pengaturan) dan tersimpan aman di IndexedDB perangkat.
 echo.
@@ -181,7 +181,7 @@ echo.
 :: [6/7] Opsi Deployment Cloudflare Workers (Relay & Telemetri)
 :: -----------------------------------------------------------------------------
 echo [6/7] Opsi Deployment Cloudflare Workers...
-echo FinanceFlow memiliki dua Cloudflare Worker:
+echo MyFinancialFlow memiliki dua Cloudflare Worker:
 echo   1. financeflow-relay      : Relay webhook penampung pesan Telegram Bot
 echo   2. financeflow-telemetry  : Pelapor crash error privat dengan auto-TTL 30 hari
 echo.

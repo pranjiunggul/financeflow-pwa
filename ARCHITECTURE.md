@@ -3,15 +3,15 @@
 > - Baca arsitektur sistem ini dalam **Bahasa Indonesia**: [ARCHITECTURE.id.md](file:///c:/Personal%20Finance/ARCHITECTURE.id.md)
 > - Return to Main Documentation: [README.md](file:///c:/Personal%20Finance/README.md)
 
-# FinanceFlow — System Architecture & Technical Specifications
+# MyFinancialFlow — System Architecture & Technical Specifications
 
-This document outlines the software architecture, data models, synchronization protocols, edge infrastructure, and security boundaries implemented in FinanceFlow.
+This document outlines the software architecture, data models, synchronization protocols, edge infrastructure, and security boundaries implemented in MyFinancialFlow.
 
 ---
 
 ## 1. High-Level Architecture Overview
 
-FinanceFlow follows an **Offline-First, Zero-Backend** architecture. The core application runs entirely within the user's web browser, maintaining a local-first source of truth in IndexedDB. External cloud services (Google Drive, Cloudflare Workers, AI APIs) act as auxiliary edge nodes rather than centralized databases.
+MyFinancialFlow follows an **Offline-First, Zero-Backend** architecture. The core application runs entirely within the user's web browser, maintaining a local-first source of truth in IndexedDB. External cloud services (Google Drive, Cloudflare Workers, AI APIs) act as auxiliary edge nodes rather than centralized databases.
 
 ```mermaid
 graph TD
@@ -59,7 +59,7 @@ graph TD
 
 ## 2. Database Architecture (Dexie Schema v8)
 
-FinanceFlow manages all local state via **Dexie.js 4.0** over IndexedDB. The database has evolved to **Schema Version 8**, containing **23 relational tables** with automatic versioned migrations preserving user data across upgrades.
+MyFinancialFlow manages all local state via **Dexie.js 4.0** over IndexedDB. The database has evolved to **Schema Version 8**, containing **23 relational tables** with automatic versioned migrations preserving user data across upgrades.
 
 ### 2.1 Complete Table Schema & Index Map
 
@@ -131,13 +131,13 @@ The engine implements this via an optional baseline field: `otherIncomeTaxAccoun
 
 ## 4. Cloud Sync & Multi-Device Security Protocol
 
-FinanceFlow avoids central databases by synchronizing directly with the user's Google Drive via the private `appDataFolder` scope.
+MyFinancialFlow avoids central databases by synchronizing directly with the user's Google Drive via the private `appDataFolder` scope.
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor User
-    participant PWA as FinanceFlow Client
+    participant PWA as MyFinancialFlow Client
     participant IDB as IndexedDB (Local)
     participant GDrive as Google Drive (appDataFolder)
 

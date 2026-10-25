@@ -4,9 +4,9 @@
 > - Panduan Instalasi Lengkap: [INSTALLATION.md](file:///c:/Personal%20Finance/INSTALLATION.md) | [INSTALLATION.id.md](file:///c:/Personal%20Finance/INSTALLATION.id.md)
 > - Panduan Pengguna (User Guide): [TUTORIAL.md](file:///c:/Personal%20Finance/TUTORIAL.md) (ID) | [TUTORIAL.en.md](file:///c:/Personal%20Finance/TUTORIAL.en.md) (EN)
 
-# FinanceFlow — Smart, Offline-First Personal Finance PWA
+# MyFinancialFlow — Smart, Offline-First Personal Finance PWA
 
-FinanceFlow is a privacy-first, offline-capable Progressive Web Application (PWA) designed to track personal finances, cash flow, investments, savings goals, and tax liabilities with zero vendor lock-in. 
+MyFinancialFlow is a privacy-first, offline-capable Progressive Web Application (PWA) designed to track personal finances, cash flow, investments, savings goals, and tax liabilities with zero vendor lock-in. 
 
 It combines reactive client-side database storage (Dexie.js / IndexedDB), multi-modal transaction entry (voice, receipt OCR, AI chat, Telegram bot), resilient multi-provider AI parsing (Groq, Google Gemini, OpenRouter), and seamless cloud sync via Google Drive's hidden `appDataFolder`.
 
@@ -68,7 +68,7 @@ It combines reactive client-side database storage (Dexie.js / IndexedDB), multi-
 ### 8. Motivation & Gamification
 - **Financial Health Score**: Dynamic 0-100 scoring based on savings rate, budget discipline, emergency fund ratio, and logging consistency.
 - **Streaks & Badges**: Tracks daily logging streaks and unlocks achievement badges.
-- **FinanceFlow Wrapped**: Spotify-style interactive month/year-in-review visual slides.
+- **MyFinancialFlow Wrapped**: Spotify-style interactive month/year-in-review visual slides.
 
 ---
 

@@ -42,7 +42,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
             <h2 className="text-xl font-bold">Something went unexpectedly wrong</h2>
             <p className="text-xs text-slate-400">
-              FinanceFlow encountered an unhandled rendering error. Your local financial ledger
+              MyFinancialFlow encountered an unhandled rendering error. Your local financial ledger
               is safely intact in IndexedDB.
             </p>
 
